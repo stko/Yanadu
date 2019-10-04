@@ -41,6 +41,8 @@ else:
 	credentials = ""
 
 users={}
+channels={}
+sockets={}
 
 class User:
 	'''handles all user related data
@@ -55,8 +57,24 @@ class User:
 
 class WSXanaduHandler(HTTPWebSocketsHandler):
 	
-	def send_json(self,msg):
-		self.send_message(json.dumps(msg))
+	def emit(self,type,config):
+		message={'type':type, 'config':config}
+		self.send_message(json.dumps(message))
+
+	def part(self,channel):
+		self.log_message("["+ self.name + "] part ")
+
+		if not channel in self.channels:
+			self.log_message("["+ self.name + "] ERROR: not in %s", channel)
+			return
+
+		del self.channels[channel]
+		del channels[channel][self.name]
+
+		for id in channels[channel]:
+			channels[channel][id].emit('removePeer', {'peer_id': self.name})
+			self.emit('removePeer', {'peer_id': id})
+
 
 	def on_ws_message(self, message):
 		global users
@@ -73,76 +91,64 @@ class WSXanaduHandler(HTTPWebSocketsHandler):
 		if data['type'] =='msg':
 			self.log_message('msg %s',data['data'])
 
-		elif data['type'] =='login':
-			self.log_message('User logged in %s',data['name'])
-			# if anyone is logged in with this username then refuse
-			if data['name'] in users:
-				self.send_json({"type": "login", "success": False })
-			else:
-				users[data['name']] = User(data['name'],self)
-				self.name=data['name']
-				self.send_json({"type": "login", "success": True })
+		elif data['type'] =='join':
+			channel = data['config']['channel']
+			userdata = data['config']['userdata']
+			self.name=data['config']['name']
+			self.log_message("["+ self.name + "] join %s", data['config'])
+			sockets[self.name] = self
+			if channel in self.channels:
+				self.log_message("["+ self.name + "] ERROR: already joined %s", channel)
+				return
+			if not channel in channels:
+				channels[channel] = {}
 
-		elif data['type'] =='offer':
-			# for ex. UserA wants to call UserB 
-			self.log_message('"Sending offer to: %s',data['name'])
-			# if UserB exists then send him offer details 
-			try:
-				conn=users[data['name']].ws
-				#setting that UserA connected with UserB 
-				self.otherName=data['name']
-				conn.send_json({"type": "offer", "offer": data['offer'], "name": self.name})
-			except:
-				pass
 
-		elif data['type'] =='answer':
-			# for ex. UserB answers UserA 
-			self.log_message('"Sending answer to: %s',data['name'])
-			# if UserB exists then send him offer details 
-			try:
-				conn=users[data['name']].ws
-				self.otherName=data['name']
-				conn.send_json({"type": "answer", "answer": data['answer']})
-			except:
-				pass
+			for id in channels[channel]:
+				channels[channel][id].emit('addPeer', {'peer_id': self.name, 'should_create_offer': False})
+				self.emit('addPeer', {'peer_id': id, 'should_create_offer': True})
 
-		elif data['type'] =='candidate':
-			# for ex. UserB answers UserA 
-			self.log_message('"Sending candidate to: %s',data['name'])
-			# if UserB exists then send him offer details 
-			try:
-				conn=users[data['name']].ws
-				conn.send_json({"type": "candidate", "candidate": data['candidate']})
-			except:
-				pass
-		elif data['type'] =='leave':
-			# if UserB exists then send him offer details 
-			try:
-				self.log_message('"Disconnecting from %s',data['name'])
-				conn=users[data['name']].ws
-				del conn.otherName 
-				conn.send_json({"type": "leave"})
-			except:
-				pass
+			channels[channel][self.name] = self
+			self.channels[channel] = channel
+
+		elif data['type'] =='part':
+			part(data['config'])
+
+		elif data['type'] =='relayICECandidate':
+			peer_id = data['config']['peer_id']
+			ice_candidate = data['config']['ice_candidate']
+			self.log_message("["+ self.name + "] relaying ICE candidate to [" + peer_id + "] %s", ice_candidate)
+
+			if peer_id in sockets:
+				sockets[peer_id].emit('iceCandidate', {'peer_id': self.name, 'ice_candidate': ice_candidate})
+
+		elif data['type'] =='relaySessionDescription':
+
+			peer_id = data['config']['peer_id']
+			session_description = data['config']['session_description']
+			self.log_message("["+ self.name + "] relaying session description to [" + peer_id + "] %s", session_description)
+
+			if peer_id in sockets:
+				sockets[peer_id].emit('sessionDescription', {'peer_id': self.name, 'session_description': session_description})
+
 		else:
 			self.send_json({"type": "error", "message": "Command not found:"+data['type']})
 
 	def on_ws_connected(self):
 		self.log_message('%s','websocket connected')
+		self.channels = {}
+
+
 
 	def on_ws_closed(self):
 		self.log_message('%s','websocket closed')
-		try: # is self.name defined?
-			del users[self.name]
-			try: # is self.othername defined
-				self.log_message('Disconnecting from %s',self.otherName)
-				conn=users[self.otherName]
-				del conn.otherName
-				conn.send_json({"type": "leave"})
-			except:
-				pass
-		except:
-			pass
+		# as we can't delete in an array while we iterate trough it, 
+		# we make a temp copy first
+		temp_copy=self.channels.copy()
+		for channel in temp_copy:
+			self.part(channel)
+		self.log_message("["+ self.name+ "] disconnected")
+		del sockets[self.name]
 			
 
 	def setup(self):

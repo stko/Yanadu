@@ -3,7 +3,7 @@
 
 //our username 
 var name;
-var connectedUser;
+var connectedUsers=[];
 
 //connecting to our signaling server 
 var conn = new WebSocket('wss://192.168.1.27:8000');
@@ -46,7 +46,7 @@ conn.onerror = function (err) {
 };
 
 //alias for sending JSON encoded messages 
-function send(message) {
+function send(message,connectedUser) {
    //attach the other peer username to our messages 
    if (connectedUser) {
       message.name = connectedUser;
@@ -163,7 +163,30 @@ callBtn.addEventListener("click", function () {
    var callToUsername = callToUsernameInput.value;
 
    if (callToUsername.length > 0) {
-      connectedUser = callToUsername;
+      connectedUsers[callToUsername] = {
+
+
+
+         'name':callToUsername,
+         'yourConn':{
+            'onicecandidate' : null,
+            'onaddstream' : null
+         },
+         // create an offer 
+         createOffer: function (
+            function (offer) {
+         send({
+            type: "offer",
+            offer: offer
+         });
+
+         yourConn.setLocalDescription(offer);
+      }, function (error) {
+         alert("Error when creating an offer");
+      });
+
+      };
+
 
       // create an offer 
       yourConn.createOffer(function (offer) {
