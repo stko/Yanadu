@@ -17,10 +17,16 @@
             }
         </style>
 
-        <!-- <script src="https://cdn.socket.io/socket.io-1.4.5.js"></script> -->
+        <script src="../../js/webService.js"></script>
         <script src="../../js/webRTC.js"></script>
+        <script>
+            function init(){
+                webRTC.init(webService) //announces the webRTC to the webservice
+                webService.init() // let's roch
+            }
+        </script>
     </head>
-    <body onload='webRTC.init()'>
+    <body onload='init()'>
         <!-- 
         the <video> and <audio> tags are all added and removed dynamically
         in 'onAddStream', 'setup_local_media', and 'removePeer'/'disconnect'

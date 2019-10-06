@@ -72,8 +72,8 @@ class WSXanaduHandler(HTTPWebSocketsHandler):
 		del channels[channel][self.name]
 
 		for id in channels[channel]:
-			channels[channel][id].emit('removePeer', {'peer_id': self.name})
-			self.emit('removePeer', {'peer_id': id})
+			channels[channel][id].emit('rtc_removePeer', {'peer_id': self.name})
+			self.emit('rtc_removePeer', {'peer_id': id})
 
 
 	def on_ws_message(self, message):
@@ -91,7 +91,7 @@ class WSXanaduHandler(HTTPWebSocketsHandler):
 		if data['type'] =='msg':
 			self.log_message('msg %s',data['data'])
 
-		elif data['type'] =='join':
+		elif data['type'] =='rtc_join':
 			channel = data['config']['channel']
 			userdata = data['config']['userdata']
 			self.name=data['config']['name']
@@ -105,34 +105,35 @@ class WSXanaduHandler(HTTPWebSocketsHandler):
 
 
 			for id in channels[channel]:
-				channels[channel][id].emit('addPeer', {'peer_id': self.name, 'should_create_offer': False})
-				self.emit('addPeer', {'peer_id': id, 'should_create_offer': True})
+				channels[channel][id].emit('rtc_addPeer', {'peer_id': self.name, 'should_create_offer': False})
+				self.emit('rtc_addPeer', {'peer_id': id, 'should_create_offer': True})
 
 			channels[channel][self.name] = self
 			self.channels[channel] = channel
 
-		elif data['type'] =='part':
+		elif data['type'] =='rtc_part':
 			part(data['config'])
+			self.log_message("ERROR: part command not implemented?!?")
 
-		elif data['type'] =='relayICECandidate':
+		elif data['type'] =='rtc_relayICECandidate':
 			peer_id = data['config']['peer_id']
 			ice_candidate = data['config']['ice_candidate']
 			self.log_message("["+ self.name + "] relaying ICE candidate to [" + peer_id + "] %s", ice_candidate)
 
 			if peer_id in sockets:
-				sockets[peer_id].emit('iceCandidate', {'peer_id': self.name, 'ice_candidate': ice_candidate})
+				sockets[peer_id].emit('rtc_iceCandidate', {'peer_id': self.name, 'ice_candidate': ice_candidate})
 
-		elif data['type'] =='relaySessionDescription':
+		elif data['type'] =='rtc_relaySessionDescription':
 
 			peer_id = data['config']['peer_id']
 			session_description = data['config']['session_description']
 			self.log_message("["+ self.name + "] relaying session description to [" + peer_id + "] %s", session_description)
 
 			if peer_id in sockets:
-				sockets[peer_id].emit('sessionDescription', {'peer_id': self.name, 'session_description': session_description})
+				sockets[peer_id].emit('rtc_sessionDescription', {'peer_id': self.name, 'session_description': session_description})
 
 		else:
-			self.send_json({"type": "error", "message": "Command not found:"+data['type']})
+			self.log_message("Command not found:"+data['type'])
 
 	def on_ws_connected(self):
 		self.log_message('%s','websocket connected')

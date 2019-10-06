@@ -6,12 +6,11 @@ if (typeof webRTC == "undefined") {
     webRTC = {
 
         /** CONFIG **/
-        SIGNALING_SERVER: "wss://" + window.location.hostname + ":" + window.location.port,
         USE_AUDIO: true,
-        USE_VIDEO: true,
+        USE_VIDEO: false,
         DEFAULT_CHANNEL: 'some-global-channel-name',
         MUTE_AUDIO_BY_DEFAULT: false,
-
+        emit:null,
         /** You should probably use a different stun server doing commercial stuff **/
         /** Also see: https://gist.github.com/zziuni/3741933 **/
         ICE_SERVERS: [
@@ -19,7 +18,6 @@ if (typeof webRTC == "undefined") {
         ],
 
 
-        signaling_socket: null,   /* our socket.io connection to our webserver */
         local_media_stream: null, /* our own microphone / webcam */
         peers: {},                /* keep track of our peer connections, indexed by peer_id (aka socket.io id) */
         peer_media_elements: {},  /* keep track of our <video>/<audio> tags, indexed by peer_id */
@@ -29,71 +27,63 @@ if (typeof webRTC == "undefined") {
             };
             return (S4() + S4() + "-" + S4() + "-" + S4() + "-" + S4() + "-" + S4() + S4() + S4());
         },
-        init: function () {
-            console.log("Connecting to signaling server");
-            webRTC.signaling_socket = new WebSocket(webRTC.SIGNALING_SERVER);
 
-            webRTC.signaling_socket.onopen = function () {
-                console.log("Connected to the signaling server");
-                webRTC.setup_local_media(function () {
-                    /* once the user has given us access to their
-                     * microphone/camcorder, join the channel and start peering up */
-                    webRTC.join_chat_channel(webRTC.DEFAULT_CHANNEL, { 'whatever-you-want-here': 'stuff' });
-                });
-            };
-
-            webRTC.signaling_socket.onclose = function (event) {
-                console.log("Disconnected from signaling server");
-                /* Tear down all of our peer connections and remove all the
-                 * media divs when we disconnect */
-                for (peer_id in webRTC.peer_media_elements) {
-                    webRTC.peer_media_elements[peer_id].remove();
-                }
-                for (peer_id in webRTC.peers) {
-                    webRTC.peers[peer_id].close();
-                }
-
-                webRTC.peers = {};
-                webRTC.peer_media_elements = {};
-            };
-
-            //when we got a message from a signaling server 
-            webRTC.signaling_socket.onmessage = function (msg) {
-                console.log("Got message", msg.data);
-                var data = JSON.parse(msg.data);
-
-                switch (data.type) {
-                    case "addPeer":
-                        webRTC.do_addPeer(data.config);
-                        break;
-                    case "sessionDescription":
-                        webRTC.do_sessionDescription(data.config);
-                        break;
-                    case "iceCandidate":
-                        webRTC.do_iceCandidate(data.config);
-                        break;
-                    case "removePeer":
-                        webRTC.do_removePeer(data.config);
-                        break;
-                    default:
-                        break;
-                }
-            };
-
-            webRTC.signaling_socket.onerror = function (err) {
-                console.log("Got error", err);
-            };
-
+        onWebSocketOpen: function () {
+            console.log("onWebSocketOpen in webRCT");
+            webRTC.setup_local_media(function () {
+                /* once the user has given us access to their
+                 * microphone/camcorder, rtc_join the channel and start peering up */
+                webRTC.join_chat_channel(webRTC.DEFAULT_CHANNEL, { 'whatever-you-want-here': 'stuff' });
+            });
 
         },
 
-            /** 
-            * When we join a group, our signaling server will send out 'addPeer' events to each pair
-            * of users in the group (creating a fully-connected graph of users, ie if there are 6 people
-            * in the channel you will connect directly to the other 5, so there will be a total of 15 
-            * connections in the network). 
-            */
-           do_addPeer: function (config) {
+        onWebSocketClose: function () {
+            console.log("onWebSocketClose in webRCT");
+            /* Tear down all of our peer connections and remove all the
+             * media divs when we disconnect */
+            for (peer_id in webRTC.peer_media_elements) {
+                webRTC.peer_media_elements[peer_id].remove();
+            }
+            for (peer_id in webRTC.peers) {
+                webRTC.peers[peer_id].close();
+            }
+            webRTC.peers = {};
+            webRTC.peer_media_elements = {};
+        },
+
+        init: function (webSocket) {
+            console.log("init webRTC");
+            webSocket.register("rtc_", webRTC.handleWSMsg,webRTC.onWebSocketOpen,webRTC.onWebSocketClose)
+            webRTC.emit=webSocket.emit
+        },
+        handleWSMsg: function (data) {
+            switch (data.type) {
+                case "rtc_addPeer":
+                    webRTC.do_addPeer(data.config);
+                    break;
+                case "rtc_sessionDescription":
+                    webRTC.do_sessionDescription(data.config);
+                    break;
+                case "rtc_iceCandidate":
+                    webRTC.do_iceCandidate(data.config);
+                    break;
+                case "rtc_removePeer":
+                    webRTC.do_removePeer(data.config);
+                    break;
+                default:
+                    break;
+            }
+
+        },
+
+        /** 
+        * When we rtc_join a group, our signaling server will send out 'rtc_addPeer' events to each pair
+        * of users in the group (creating a fully-connected graph of users, ie if there are 6 people
+        * in the channel you will connect directly to the other 5, so there will be a total of 15 
+        * connections in the network). 
+        */
+        do_addPeer: function (config) {
             console.log('Signaling server said to add peer:', config);
             var peer_id = config.peer_id;
             if (peer_id in webRTC.peers) {
@@ -111,7 +101,7 @@ if (typeof webRTC == "undefined") {
 
             peer_connection.onicecandidate = function (event) {
                 if (event.candidate) {
-                    webRTC.emit('relayICECandidate', {
+                    webRTC.emit('rtc_relayICECandidate', {
                         'peer_id': peer_id,
                         'ice_candidate': {
                             'sdpMLineIndex': event.candidate.sdpMLineIndex,
@@ -138,8 +128,8 @@ if (typeof webRTC == "undefined") {
 
             /* Only one side of the peer connection should create the
              * offer, the signaling server picks one to be the offerer. 
-             * The other user will get a 'sessionDescription' event and will
-             * create an offer, then send back an answer 'sessionDescription' to us
+             * The other user will get a 'rtc_sessionDescription' event and will
+             * create an offer, then send back an answer 'rtc_sessionDescription' to us
              */
             if (config.should_create_offer) {
                 console.log("Creating RTC offer to ", peer_id);
@@ -148,7 +138,7 @@ if (typeof webRTC == "undefined") {
                         console.log("Local offer description is: ", local_description);
                         peer_connection.setLocalDescription(local_description,
                             function () {
-                                webRTC.emit('relaySessionDescription',
+                                webRTC.emit('rtc_relaySessionDescription',
                                     { 'peer_id': peer_id, 'session_description': local_description });
                                 console.log("Offer setLocalDescription succeeded");
                             },
@@ -186,7 +176,7 @@ if (typeof webRTC == "undefined") {
                                 console.log("Answer description is: ", local_description);
                                 peer.setLocalDescription(local_description,
                                     function () {
-                                        webRTC.emit('relaySessionDescription',
+                                        webRTC.emit('rtc_relaySessionDescription',
                                             { 'peer_id': peer_id, 'session_description': local_description });
                                         console.log("Answer setLocalDescription succeeded");
                                     },
@@ -220,7 +210,7 @@ if (typeof webRTC == "undefined") {
 
         /**
          * When a user leaves a channel (or is disconnected from the
-         * signaling server) everyone will recieve a 'removePeer' message
+         * signaling server) everyone will recieve a 'rtc_removePeer' message
          * telling them to trash the media channels they have open for those
          * that peer. If it was this client that left a channel, they'll also
          * receive the removePeers. If this client was disconnected, they
@@ -242,19 +232,11 @@ if (typeof webRTC == "undefined") {
             delete webRTC.peer_media_elements[config.peer_id];
         },
 
-        //alias for sending JSON encoded messages 
-        emit: function (type, config) {
-            //attach the other peer username to our messages 
-            message = { 'type': type, 'config': config }
-
-            webRTC.signaling_socket.send(JSON.stringify(message));
-        },
-
         join_chat_channel: function (channel, userdata) {
-            webRTC.emit('join', { "channel": channel, "name": webRTC.guidGenerator(), "userdata": userdata });
+            webRTC.emit('rtc_join', { "channel": channel, "name": webRTC.guidGenerator(), "userdata": userdata });
         },
         part_chat_channel: function (channel) {
-            webRTC.emit('part', channel);
+            webRTC.emit('rtc_part', channel);
         },
 
 
@@ -305,7 +287,6 @@ if (typeof webRTC == "undefined") {
 
             async function getMedia(constraints) {
                 let stream = null;
-
                 try {
                     stream = await navigator.mediaDevices.getUserMedia(constraints);
                     /* use the stream */
@@ -325,12 +306,7 @@ if (typeof webRTC == "undefined") {
                     if (errorback) errorback();
                 }
             }
-
-            getMedia({ audio: true });
-
-
-
-
+            getMedia({ audio:  true });
         }
     }
 }
