@@ -2,10 +2,6 @@
 <html>
     <head>
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
-        <!-- This adapter.js file de-prefixes the webkit* and moz* prefixed RTC
-             methods. When RTC becomes a more solid standard, this adapter should no
-             longer be necessary. -->
-        <!-- <script src="https://webrtc.googlecode.com/svn/trunk/samples/js/base/adapter.js"></script> -->
         <style>
             html, body { 
                 background-color: #333; 
@@ -17,12 +13,16 @@
             }
         </style>
 
+        <!-- This adapter.js file de-prefixes the webkit* and moz* prefixed RTC
+             methods. When RTC becomes a more solid standard, this adapter should no
+             longer be necessary. -->
+        <!-- <script src="https://webrtc.googlecode.com/svn/trunk/samples/js/base/adapter.js"></script> -->
         <script src="../../js/webService.js"></script>
         <script src="../../js/webRTC.js"></script>
         <script>
             function init(){
                 webRTC.init(webService) //announces the webRTC to the webservice
-                webService.init() // let's roch
+                webService.init() // let's rock
             }
         </script>
     </head>

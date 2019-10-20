@@ -26,6 +26,7 @@ else:
 	from StringIO import StringIO
 
 from HTTPWebSocketsHandler import HTTPWebSocketsHandler
+from webRTC import WebRTC
 
 if len(sys.argv) > 1:
 	port = int(sys.argv[1])
@@ -40,44 +41,36 @@ if len(sys.argv) > 3:
 else:
 	credentials = ""
 
-users={}
-channels={}
-sockets={}
-
 class User:
 	'''handles all user related data
 	'''
-	def __init__(self,name,websocket):
+	def __init__(self,name,peer_id,ws):
 		self.name=name
-		self.ws=websocket
+		self.peer_id=peer_id
+		self.ws=ws
 		self.pos={
 			'position': [0, 0, 0],
 			'rotation': [0, 0, 0]
 		}
 
+modules={}
+users=[]
+
 class WSXanaduHandler(HTTPWebSocketsHandler):
-	
+
+	def get_module(self,prefix):
+		global modules
+		try:
+			return modules[prefix]
+		except:
+			return None
+
+
 	def emit(self,type,config):
 		message={'type':type, 'config':config}
 		self.send_message(json.dumps(message))
 
-	def part(self,channel):
-		self.log_message("["+ self.name + "] part ")
-
-		if not channel in self.channels:
-			self.log_message("["+ self.name + "] ERROR: not in %s", channel)
-			return
-
-		del self.channels[channel]
-		del channels[channel][self.name]
-
-		for id in channels[channel]:
-			channels[channel][id].emit('rtc_removePeer', {'peer_id': self.name})
-			self.emit('rtc_removePeer', {'peer_id': id})
-
-
 	def on_ws_message(self, message):
-		global users
 		if message is None:
 			message = ''
 		self.log_message('websocket received "%s"',str(message))
@@ -91,72 +84,69 @@ class WSXanaduHandler(HTTPWebSocketsHandler):
 		if data['type'] =='msg':
 			self.log_message('msg %s',data['data'])
 
-		elif data['type'] =='rtc_join':
-			channel = data['config']['channel']
-			userdata = data['config']['userdata']
-			self.name=data['config']['name']
-			self.log_message("["+ self.name + "] join %s", data['config'])
-			sockets[self.name] = self
-			if channel in self.channels:
-				self.log_message("["+ self.name + "] ERROR: already joined %s", channel)
-				return
-			if not channel in channels:
-				channels[channel] = {}
-
-
-			for id in channels[channel]:
-				channels[channel][id].emit('rtc_addPeer', {'peer_id': self.name, 'should_create_offer': False})
-				self.emit('rtc_addPeer', {'peer_id': id, 'should_create_offer': True})
-
-			channels[channel][self.name] = self
-			self.channels[channel] = channel
-
-		elif data['type'] =='rtc_part':
-			part(data['config'])
-			self.log_message("ERROR: part command not implemented?!?")
-
-		elif data['type'] =='rtc_relayICECandidate':
-			peer_id = data['config']['peer_id']
-			ice_candidate = data['config']['ice_candidate']
-			self.log_message("["+ self.name + "] relaying ICE candidate to [" + peer_id + "] %s", ice_candidate)
-
-			if peer_id in sockets:
-				sockets[peer_id].emit('rtc_iceCandidate', {'peer_id': self.name, 'ice_candidate': ice_candidate})
-
-		elif data['type'] =='rtc_relaySessionDescription':
-
-			peer_id = data['config']['peer_id']
-			session_description = data['config']['session_description']
-			self.log_message("["+ self.name + "] relaying session description to [" + peer_id + "] %s", session_description)
-
-			if peer_id in sockets:
-				sockets[peer_id].emit('rtc_sessionDescription', {'peer_id': self.name, 'session_description': session_description})
+		if data['type'] =='_join':
+			self.log_message('join %s',data['config'])
+			self.user.peer_id=data['config']["name"]
+			global users
+			if not users: # first user
+				users.append(self.user)
+			else:
+				for other_user in users:
+					if other_user != self.user:
+						rtc=self.get_module("rtc_")
+						print("rtc",rtc)
+						if rtc:
+							rtc["module"].join_users_into_group(self.user,other_user)
+						break
 
 		else:
-			self.log_message("Command not found:"+data['type'])
+			unknown_msg=True
+			global modules
+			for id, module in modules.items():
+				if data['type'].lower().startswith(id):
+					module["msg"](data,self.user)
+					unknown_msg=False
+			if unknown_msg:
+				self.log_message("Command not found:"+data['type'])
 
 	def on_ws_connected(self):
 		self.log_message('%s','websocket connected')
-		self.channels = {}
-
+		self.user=User("",None,self)
+		global users
+		users.append(self.user)
 
 
 	def on_ws_closed(self):
 		self.log_message('%s','websocket closed')
-		# as we can't delete in an array while we iterate trough it, 
-		# we make a temp copy first
-		temp_copy=self.channels.copy()
-		for channel in temp_copy:
-			self.part(channel)
-		self.log_message("["+ self.name+ "] disconnected")
-		del sockets[self.name]
-			
+		# was that websocket already joined?
+		try:
+			self.user.name
+			rtc=self.get_module("rtc_")
+			rtc.remove(self.user.name,True)
+		except:
+			pass
+		global users
+		users.remove(self.user)
 
 	def setup(self):
 		super(HTTPWebSocketsHandler, self).setup()
 
+
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
 	"""Handle requests in a separate thread."""
+	def register (self, prefix, module, wsMsghandler,wsOnOpen,wsOnClose):
+		global modules
+		modules[prefix]={'module':module,'msg':wsMsghandler,'open':wsOnOpen,'close':wsOnOpen}
+
+	def open_Modules(self):
+		global modules
+		for module in modules.values():
+			module["open"]()
+
+	def close_Modules(self):
+		global modules
+		for module in modules.values():
+			module["close"]()
 
 def _ws_main():
 	try:
@@ -170,6 +160,9 @@ def _ws_main():
 			print('started secure https server at port %d' % (port,))
 		else:
 			print('started http server at port %d' % (port,))
+		WebRTC(server,users)
+		server.open_Modules()
+
 		server.serve_forever()
 	except KeyboardInterrupt:
 		print('^C received, shutting down server')

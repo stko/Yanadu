@@ -233,10 +233,10 @@ if (typeof webRTC == "undefined") {
         },
 
         join_chat_channel: function (channel, userdata) {
-            webRTC.emit('rtc_join', { "channel": channel, "name": webRTC.guidGenerator(), "userdata": userdata });
+            webRTC.emit('_join', { "channel": channel, "name": webRTC.guidGenerator(), "userdata": userdata });
         },
-        part_chat_channel: function (channel) {
-            webRTC.emit('rtc_part', channel);
+        remove_chat_channel: function (channel) {
+            webRTC.emit('rtc_remove', channel);
         },
 
 
