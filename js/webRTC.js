@@ -8,7 +8,7 @@ if (typeof webRTC == "undefined") {
         /** CONFIG **/
         USE_AUDIO: true,
         USE_VIDEO: false,
-        DEFAULT_CHANNEL: 'some-global-channel-name',
+        DEFAULT_ROOM: 'default',
         MUTE_AUDIO_BY_DEFAULT: false,
         emit:null,
         /** You should probably use a different stun server doing commercial stuff **/
@@ -32,8 +32,8 @@ if (typeof webRTC == "undefined") {
             console.log("onWebSocketOpen in webRCT");
             webRTC.setup_local_media(function () {
                 /* once the user has given us access to their
-                 * microphone/camcorder, rtc_join the channel and start peering up */
-                webRTC.join_chat_channel(webRTC.DEFAULT_CHANNEL, { 'whatever-you-want-here': 'stuff' });
+                 * microphone/camcorder, rtc_join the room and start peering up */
+                webRTC.join_chat_room(webRTC.DEFAULT_ROOM, { 'whatever-you-want-here': 'stuff' });
             });
 
         },
@@ -80,14 +80,14 @@ if (typeof webRTC == "undefined") {
         /** 
         * When we rtc_join a group, our signaling server will send out 'rtc_addPeer' events to each pair
         * of users in the group (creating a fully-connected graph of users, ie if there are 6 people
-        * in the channel you will connect directly to the other 5, so there will be a total of 15 
+        * in the room you will connect directly to the other 5, so there will be a total of 15 
         * connections in the network). 
         */
         do_addPeer: function (config) {
             console.log('Signaling server said to add peer:', config);
             var peer_id = config.peer_id;
             if (peer_id in webRTC.peers) {
-                /* This could happen if the user joins multiple channels where the other peer is also in. */
+                /* This could happen if the user joins multiple rooms where the other peer is also in. */
                 console.log("Already connected to peer ", peer_id);
                 return;
             }
@@ -209,10 +209,10 @@ if (typeof webRTC == "undefined") {
 
 
         /**
-         * When a user leaves a channel (or is disconnected from the
+         * When a user leaves a room (or is disconnected from the
          * signaling server) everyone will recieve a 'rtc_removePeer' message
-         * telling them to trash the media channels they have open for those
-         * that peer. If it was this client that left a channel, they'll also
+         * telling them to trash the media rooms they have open for those
+         * that peer. If it was this client that left a room, they'll also
          * receive the removePeers. If this client was disconnected, they
          * wont receive removePeers, but rather the
          * function do_disconnect') code will kick in and tear down
@@ -232,11 +232,11 @@ if (typeof webRTC == "undefined") {
             delete webRTC.peer_media_elements[config.peer_id];
         },
 
-        join_chat_channel: function (channel, userdata) {
-            webRTC.emit('_join', { "channel": channel, "name": webRTC.guidGenerator(), "userdata": userdata });
+        join_chat_room: function (room, userdata) {
+            webRTC.emit('_join', { "room": room, "name": webRTC.guidGenerator(), "userdata": userdata });
         },
-        remove_chat_channel: function (channel) {
-            webRTC.emit('rtc_remove', channel);
+        remove_chat_room: function (room) {
+            webRTC.emit('rtc_remove', room);
         },
 
 
