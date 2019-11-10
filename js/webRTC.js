@@ -233,7 +233,7 @@ if (typeof webRTC == "undefined") {
         },
 
         join_chat_room: function (room, userdata) {
-            webRTC.emit('_join', { "room": room, "name": webRTC.guidGenerator(), "userdata": userdata });
+            webRTC.emit('_join', { "room": room, "name": "Alice", "peer_id": webRTC.guidGenerator(), "userdata": userdata });
         },
         remove_chat_room: function (room) {
             webRTC.emit('rtc_remove', room);

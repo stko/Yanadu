@@ -7,11 +7,11 @@ from base64 import b64encode
 
 class WebRTC:
 
-	def __init__(self, parent,users):
+	def __init__(self, parent,ws_clients):
 		self.parent = parent
 		print("Reset webRTC groups...")
 		self.groups = []
-		self.users = users
+		self.ws_clients = ws_clients
 		self.parent.register("rtc_", self, self.handleWSMsg,
 						 self.onWebSocketOpen, self.onWebSocketClose)
 
@@ -22,7 +22,7 @@ class WebRTC:
 		return None
 
 	def get_user_by_peer_id(self, peer_id):
-		for user in self.users:
+		for user in self.ws_clients:
 			if user.peer_id == peer_id:
 				return user
 		return None
@@ -34,6 +34,7 @@ class WebRTC:
 		return False  # for testing: force a group join
 
 	def add_user_to_group(self, user, group):
+		group.append(user)
 		for other_user in group:
 			if other_user != user:
 				other_user.ws.emit(

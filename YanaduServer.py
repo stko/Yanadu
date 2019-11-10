@@ -60,7 +60,7 @@ class User:
 
 modules = {}
 ws_clients = []
-rooms = []
+
 
 
 class WSXanaduHandler(HTTPWebSocketsHandler):
@@ -92,19 +92,17 @@ class WSXanaduHandler(HTTPWebSocketsHandler):
 
 		if data['type'] == '_join':
 			self.log_message('join %s', data['config'])
-			self.user.peer_id = data['config']["name"]
+			self.user.name = data['config']["name"]
+			self.user.peer_id = data['config']["peer_id"]
 			self.user.room = Room.find_room_by_name( None,self.user.peer_id, data['config']["room"])
-			if not self.user.room.users:  # first user
-				self.user.room.users.append(self.user)
-			else:
-				for other_user in self.user.room.users:
-					if other_user != self.user:
-						rtc = self.get_module("rtc_")
-						print("rtc", rtc)
-						if rtc:
-							rtc["module"].join_users_into_group(
-								self.user, other_user)
-						break
+			self.user.room.users.append(self.user)
+			for other_user in self.user.room.users:
+				if other_user != self.user:
+					rtc = self.get_module("rtc_")
+					if rtc:
+						rtc["module"].join_users_into_group(
+							self.user, other_user)
+					break
 
 		else:
 			unknown_msg = True
@@ -126,9 +124,10 @@ class WSXanaduHandler(HTTPWebSocketsHandler):
 		self.log_message('%s', 'websocket closed')
 		# was that websocket already joined?
 		try:
-			self.user.name
+			self.user.peer_id
 			rtc = self.get_module("rtc_")
-			rtc.remove(self.user.name, True)
+			rtc["module"].remove(self.user, True)
+			self.user.room.user_leaves(self.user)
 		except:
 			pass
 		global ws_clients

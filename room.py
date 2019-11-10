@@ -5,7 +5,6 @@ class Room:
 	def __init__(self,filename):
 		self.name='default'
 		self.users=[]
-		self.groups=[]
 		Room.rooms.append(self)
 
 	def find_room_by_name(self, user_name, room_name):
@@ -21,3 +20,6 @@ class Room:
 		'''
 		print("find_room_by_name not implemented yet")
 		return Room.rooms[0]
+	
+	def user_leaves(self,user):
+		self.users.remove(user)
