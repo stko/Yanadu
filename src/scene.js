@@ -48,6 +48,7 @@ class Scene extends EventEmitter {
     window.addEventListener('resize', e => this.onWindowResize(e), false);
     domElement.addEventListener('mouseenter', e => this.onEnterCanvas(e), false);
     domElement.addEventListener('mouseleave', e => this.onLeaveCanvas(e), false);
+    domElement.addEventListener('mousemove', e => this.onMouseMove(e), false);
     window.addEventListener('keydown', e => this.onKeyDown(e), false);
 
     this.helperGrid = new THREE.GridHelper( 10, 10 );
@@ -96,6 +97,9 @@ class Scene extends EventEmitter {
   }
   onKeyDown(e){
     this.emit('userMoved');
+  }
+  onMouseMove(e){
+    this.emit('mouseMoved');
   }
 }
 
