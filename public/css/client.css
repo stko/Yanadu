@@ -4,6 +4,14 @@ body{
   overflow-x: hidden;
   overflow-y: scroll;
 }
+html, body { 
+  background-color: #333; 
+}
+video {
+  width:  320px;
+  height:  240px;
+  border:  1px solid black;
+}
 .dashboard{
   text-align: center;
   font-size: 10pt;
@@ -23,4 +31,31 @@ body{
 #contribute{
   position: absolute;
   top: 65px; right: 20px;
+}
+ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+li {
+  float: left;
+}
+
+li a {
+  display: block;
+  padding: 8px;
+  background-color: #dddddd;
+}
+#gl_context
+{
+  width:95%;
+  margin: 0;
+  padding: 0;
+}
+#userList
+{
+  float: right;
+  width:5%;
 }

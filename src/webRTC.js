@@ -1,6 +1,6 @@
 
 /**
- * Try to create WebRTC as class
+ * Class to manage the WebRTC audio connections
  */
 
 
@@ -315,4 +315,4 @@ class WebRTC  {
 	}
 }
 
-export default WebRTC;
+export default WebRTC
