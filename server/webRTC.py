@@ -60,7 +60,7 @@ class WebRTC:
 		if not group_1 and group_2:
 			self.add_user_to_group(user_1, group_2)
 
-	def onWebSocketOpen(self):
+	def onWebSocketOpen(self,user):
 		pass
 
 	def onWebSocketClose(self,user):

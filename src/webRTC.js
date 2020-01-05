@@ -33,7 +33,7 @@ class WebRTC  {
 	}
 
 	onWebSocketOpen () {
-		console.log("onWebSocketOpen in webRCT")
+		console.log("onWebSocketOpen in webRTC")
 		this.setup_local_media(function () {
 			/* once the user has given us access to their
 				* microphone/camcorder, rtc_join the room and start peering up */
@@ -43,7 +43,7 @@ class WebRTC  {
 	}
 
 	onWebSocketClose () {
-		console.log("onWebSocketClose in webRCT")
+		console.log("onWebSocketClose in webRTC")
 		/* Tear down all of our peer connections and remove all the
 			* media divs when we disconnect */
 		for (peer_id in this.peer_media_elements) {

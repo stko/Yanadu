@@ -6,40 +6,48 @@
 class WebService {
 
 	constructor(){
-		this.SIGNALING_SERVER = "wss://" + window.location.hostname + ":" + window.location.port
+		//this.SIGNALING_SERVER = "wss://" + window.location.hostname + ":" + window.location.port
+		this.SIGNALING_SERVER = "ws://" + window.location.hostname + ":" + window.location.port
 		this.signaling_socket =  null   /* our socket.io connection to our webserver */
 		this.modules = {} /* contains the registered modules */
+		//alias for sending JSON encoded messages
+		this.emit = (type, config) => {
+			//attach the other peer username to our messages 
+			let message = { 'type': type, 'config': config }
+			this.signaling_socket.send(JSON.stringify(message))
+		}
+		console.log("Construct WebService", this.modules)
+
 	}
 
 	register(prefix,wsMsghandler,wsOnOpen,wsOnClose){
 		this.modules[prefix]={'msg':wsMsghandler,'open':wsOnOpen,'close':wsOnOpen}
+		console.log("Register prefix", prefix,this.modules)
 	}
 
 	init () {
 		console.log("Connecting to signaling server")
 		this.signaling_socket = new WebSocket(this.SIGNALING_SERVER)
-		this.signaling_socket.onopen = function () {
+		this.signaling_socket.onopen =  ()  => {
 			console.log("Connected to the signaling server")
-			for (prefix in this.modules){
+			for (let prefix in this.modules){
 				this.modules[prefix].open()
 			}
 		}
 
-		this.signaling_socket.onclose = function (event) {
+		this.signaling_socket.onclose =  (event)=>  {
 			console.log("Disconnected from signaling server")
-			for (prefix in this.modules){
+			for (let prefix in this.modules){
 				this.modules[prefix].close()
 			}
 		}
 
 		//when we got a message from a signaling server 
-		this.signaling_socket.onmessage = function (msg) {
-			console.log("Got message", msg.data)
+		this.signaling_socket.onmessage =  (msg) => {
 			var data = JSON.parse(msg.data)
 			var success=false
-			for (prefix in this.modules){
+			for (let prefix in this.modules){
 				if (data.type.startsWith(prefix)){
-					console.log("found module for msg type",data.type)
 					this.modules[prefix].msg(data)
 					success=true
 					break
@@ -53,14 +61,10 @@ class WebService {
 		this.signaling_socket.onerror = function (err) {
 			console.log("Got error", err)
 		}
+
+	
 	}
 
-	//alias for sending JSON encoded messages 
-	emit (type, config) {
-		//attach the other peer username to our messages 
-		message = { 'type': type, 'config': config }
-		this.signaling_socket.send(JSON.stringify(message))
-	}
 }
 
 

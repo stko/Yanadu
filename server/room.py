@@ -37,12 +37,11 @@ class Room:
 		if data['type'] == 'room_remove':
 			remove(data['config'])
 
-		elif data['type'] == 'rtc_move':
-			print('User ' + user.peer_id + ' moves')
+		elif data['type'] == 'room_move':
 			coordinates={}
 			for any_user in self.ws_clients:
 				if any_user.peer_id==user.peer_id:
-					any_user.pos=data['pos']
+					any_user.pos=data['config']['pos']
 				coordinates[any_user.peer_id]=any_user.pos
 			for user in self.ws_clients:
 				user.ws.emit('room_move', {'coords':coordinates})

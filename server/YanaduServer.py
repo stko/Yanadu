@@ -20,7 +20,7 @@ import ssl
 import json
 from base64 import b64encode
 from room import Room
-
+from uuid import uuid4
 
 VER = sys.version_info[0]
 if VER >= 3:
@@ -51,9 +51,10 @@ class User:
 	'''handles all user related data
 	'''
 
-	def __init__(self, name, peer_id, ws):
+
+	def __init__(self, name, ws):
 		self.name = name
-		self.peer_id = peer_id
+		self.peer_id =  str(uuid4())
 		self.ws = ws
 		self.room = None
 		self.pos = {
@@ -120,7 +121,7 @@ class WSXanaduHandler(HTTPWebSocketsHandler):
 
 	def on_ws_connected(self):
 		self.log_message('%s', 'websocket connected')
-		self.user = User("", None, self)
+		self.user = User("", self)
 		global ws_clients
 		ws_clients.append(self.user)
 		global modules
@@ -170,7 +171,6 @@ def _ws_main():
 			print('started http server at port %d' % (port,))
 		WebRTC(server, ws_clients, global_config)
 		Room(server, ws_clients, global_config)
-		print("geht")
 		origin_dir = os.path.dirname(__file__)
 		web_dir = os.path.join(os.path.dirname(__file__), '../public')
 		os.chdir(web_dir)

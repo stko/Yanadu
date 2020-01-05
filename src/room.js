@@ -4,6 +4,7 @@ import Scene from './scene';
 import * as THREE from 'three';
 
 class Room  {
+	
 
 	constructor(emit){
 		this.glScene = new Scene()
@@ -11,38 +12,36 @@ class Room  {
 		this.emit=emit
 		this.instances = []
 		this.clients = new Object()
-	
+		self=this
 		this.glScene.on('userMoved', ()=>{
-			console.log("room: move")
-		  this.emit([this.glScene.camera.position.x, this.glScene.camera.position.y, this.glScene.camera.position.z]);
+			this.emit("room_move",{'pos':[this.glScene.camera.position.x, this.glScene.camera.position.y, this.glScene.camera.position.z]})
 		});
 		this.glScene.on('mouseMoved', ()=>{
-			console.log("mouse: move")
-		  this.emit([this.glScene.camera.position.x, this.glScene.camera.position.y, this.glScene.camera.position.z]);
+			this.emit("room_move",{'pos':[this.glScene.camera.position.x, this.glScene.camera.position.y, this.glScene.camera.position.z]})
 		});
 		}
 		
 		
 		init (webSocket) {
-			console.log("init room")
-			webSocket.register("room_", this.handleWSMsg,this.onWebSocketOpen,this.onWebSocketClose)
+			// try to solve the "self" problem with ()=>{}
+			webSocket.register("room_", (data)=>{this.handleWSMsg(this,data)},this.onWebSocketOpen,this.onWebSocketClose)
 			this.emit=webSocket.emit
 		}
 	
-		handleWSMsg (data) {
+		handleWSMsg (self, data) {
 			switch (data.type) {
 				//On connection server sends the client his ID
 				case "room_introduction":
-					this.do_introduction(data.config)
+					self.do_introduction(self,data.config)
 					break;
 				case "room_newUserConnected":
-					this.do_newUserConnected(data.config)
+					self.do_newUserConnected(self,data.config)
 					break;
 				case "room_userDisconnected":
-					this.do_userDisconnected(data.config)
+					self.do_userDisconnected(self,data.config)
 					break;
 				case "room_userPositions":
-					this.do_userPositions(data.config)
+					self.do_userPositions(self,data.config)
 					break;
 				default:
 					break;
@@ -50,48 +49,42 @@ class Room  {
 		}
 
 		onWebSocketOpen () {
-			console.log("onWebSocketOpen in room")
 		}
 	
 		onWebSocketClose () {
-			console.log("onWebSocketClose in room")
+
 		}
 	
 	
 	//On connection server sends the client his ID
-	do_introduction(config){
-	  for(let i = 0; i < config._ids.length; i++){
-		if(config._ids[i] != config._id){
-			this.clients[config._ids[i]] = {
-			mesh: new THREE.Mesh(
-				new THREE.BoxGeometry(1,1,1),
-				new THREE.MeshNormalMaterial()
-			)
+	do_introduction(self,config){
+		for(let i = 0; i < config._ids.length; i++){
+			if(config._ids[i] != config._id){
+				self.clients[config._ids[i]] = {
+				mesh: new THREE.Mesh(
+					new THREE.BoxGeometry(1,1,1),
+					new THREE.MeshNormalMaterial()
+				)
+			}
+			//Add initial users to the scene
+			self.glScene.scene.add(self.clients[config._ids[i]].mesh)
+			}
 		}
-		//Add initial users to the scene
-		this.glScene.scene.add(this.clients[config._ids[i]].mesh)
-		}
-	  }
-	
-	  console.log(this.clients)
-	
-	  this.id = config._id
-	  console.log('My ID is: ' + this.id)
-	
+		self.id = config._id
 	}
 	
-	do_newUserConnected(config){
-		console.log(config.clientCount + ' clients connected')
+	do_newUserConnected(self, config){
+		console.log(config._clientNum + ' clients connected')
 		let alreadyHasUser = false;
-		for(let i = 0; i < Object.keys(this.clients).length; i++){
-			if(Object.keys(this.clients)[i] == config._id){
+		for(let i = 0; i < Object.keys(self.clients).length; i++){
+			if(Object.keys(self.clients)[i] == config._id){
 				alreadyHasUser = true;
 				break;
 			}
 		}
-		if(config._id != this.id && !alreadyHasUser){
+		if(config._id != self.id && !alreadyHasUser){
 		console.log('A new user connected with the id: ' + config._id)
-		this.clients[config._id] = {
+		self.clients[config._id] = {
 			mesh: new THREE.Mesh(
 			new THREE.BoxGeometry(1,1,1),
 			new THREE.MeshNormalMaterial()
@@ -99,31 +92,29 @@ class Room  {
 		}
 
 		//Add initial users to the scene
-		this.glScene.scene.add(this.clients[config._id].mesh);
+		self.glScene.scene.add(self.clients[config._id].mesh);
 		}
 	
 	}
 	
-	do_userDisconnected(config){
+	do_userDisconnected(self, config){
 		//Update the data from the server
 		document.getElementById('numUsers').textContent = config.clientCount;
 
-		if(config._id != this.id){
+		if(config._id != self.id){
 		console.log('A user disconnected with the id: ' + config._id)
-		this.glScene.scene.remove(this.clients[config._id].mesh)
-		delete this.clients[config._id]
+		self.glScene.scene.remove(self.clients[config._id].mesh)
+		delete self.clients[config._id]
 		}
 	}
 	
 	//Update when one of the users moves in space
-	do_userPositions (config){
-		console.log('Positions of all users are ', config._clientProps, this.id)
-		console.log(Object.keys(config._clientProps)[0] == this.id)
+	do_userPositions (self, config){
 		for(let i = 0; i < Object.keys(config._clientProps).length; i++){
-			if(Object.keys(config._clientProps)[i] != this.id){
+			if(Object.keys(config._clientProps)[i] != self.id){
 
 				//Store the values
-				let oldPos = this.clients[Object.keys(config._clientProps)[i]].mesh.position
+				let oldPos = self.clients[Object.keys(config._clientProps)[i]].mesh.position
 				let newPos = config._clientProps[Object.keys(config._clientProps)[i]].position
 
 				//Create a vector 3 and lerp the new values with the old values
@@ -133,7 +124,7 @@ class Room  {
 				lerpedPos.z = THREE.Math.lerp(oldPos.z, newPos[2], 0.3)
 
 				//Set the position
-				this.clients[Object.keys(config._clientProps)[i]].mesh.position.set(lerpedPos.x, lerpedPos.y, lerpedPos.z);
+				self.clients[Object.keys(config._clientProps)[i]].mesh.position.set(lerpedPos.x, lerpedPos.y, lerpedPos.z);
 			}
 		}
 	}
