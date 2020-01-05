@@ -12,6 +12,7 @@
   "author": "Or Fleisher <contact@orfleisher.com>",
   "license": "MIT",
   "dependencies": {
+    "static-eval": ">=2.0.0",
     "ejs": "^2.5.7",
     "event-emitter-es6": "^1.1.5",
     "express": "^4.16.2",
