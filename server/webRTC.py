@@ -1,13 +1,13 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-import sys
 
-
-import sys
 import json
 from base64 import b64encode
 
 
 class WebRTC:
 
-	def __init__(self, parent,ws_clients):
+	def __init__(self, parent,ws_clients, global_config=None):
 		self.parent = parent
 		print("Reset webRTC groups...")
 		self.groups = []
@@ -63,8 +63,8 @@ class WebRTC:
 	def onWebSocketOpen(self):
 		pass
 
-	def onWebSocketClose(self):
-		pass
+	def onWebSocketClose(self,user):
+		self.remove(user,True)
 
 	def handleWSMsg(self, data, user):
 		if data['type'] == 'rtc_remove':

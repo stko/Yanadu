@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 from webRTC import WebRTC
 from HTTPWebSocketsHandler import HTTPWebSocketsHandler
 '''
@@ -11,6 +14,7 @@ combined http(s) and websocket server copied from
 
 
 import sys
+import os
 import threading
 import ssl
 import json
@@ -60,7 +64,7 @@ class User:
 
 modules = {}
 ws_clients = []
-
+global_config={}
 
 
 class WSXanaduHandler(HTTPWebSocketsHandler):
@@ -119,19 +123,24 @@ class WSXanaduHandler(HTTPWebSocketsHandler):
 		self.user = User("", None, self)
 		global ws_clients
 		ws_clients.append(self.user)
+		global modules
+		for module in modules.values():
+			module["onWebSocketOpen"](self.user)
+
 
 	def on_ws_closed(self):
 		self.log_message('%s', 'websocket closed')
 		# was that websocket already joined?
 		try:
 			self.user.peer_id
-			rtc = self.get_module("rtc_")
-			rtc["module"].remove(self.user, True)
 			self.user.room.user_leaves(self.user)
 		except:
 			pass
 		global ws_clients
 		ws_clients.remove(self.user)
+		global modules
+		for module in modules.values():
+			module["onWebSocketClose"](self.user)
 
 	def setup(self):
 		super(HTTPWebSocketsHandler, self).setup()
@@ -143,24 +152,10 @@ class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
 	def register(self, prefix, module, wsMsghandler, wsOnOpen, wsOnClose):
 		global modules
 		modules[prefix] = {'module': module, 'msg': wsMsghandler,
-						   'open': wsOnOpen, 'close': wsOnOpen}
+						   'onWebSocketOpen': wsOnOpen, 'onWebSocketClose': wsOnOpen}
 
-	def open_Modules(self):
-		global modules
-		for module in modules.values():
-			module["open"]()
-
-	def close_Modules(self):
-		global modules
-		for module in modules.values():
-			module["close"]()
-
-def load_rooms(directory):
-	print("load_rooms_not implemented yet")
-	Room(None) # initialize a dummy room
 
 def _ws_main():
-	load_rooms(None)
 	try:
 		server = ThreadedHTTPServer(('192.168.1.27', port), WSXanaduHandler)
 		server.daemon_threads = True
@@ -173,10 +168,15 @@ def _ws_main():
 			print('started secure https server at port %d' % (port,))
 		else:
 			print('started http server at port %d' % (port,))
-		WebRTC(server, ws_clients)
-		server.open_Modules()
+		WebRTC(server, ws_clients, global_config)
+		Room(server, ws_clients, global_config)
+		print("geht")
+		origin_dir = os.path.dirname(__file__)
+		web_dir = os.path.join(os.path.dirname(__file__), '../public')
+		os.chdir(web_dir)
 
 		server.serve_forever()
+		os.chdir(origin_dir)
 	except KeyboardInterrupt:
 		print('^C received, shutting down server')
 		server.socket.close()

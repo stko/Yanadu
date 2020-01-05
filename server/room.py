@@ -1,25 +1,56 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 class Room:
 	''' provides all functions to load rooms
 	'''
-	rooms=[]
-	def __init__(self,filename):
-		self.name='default'
-		self.users=[]
-		Room.rooms.append(self)
 
-	def find_room_by_name(self, user_name, room_name):
-		''' try to finds the room the user wants to enter at join
+	def __init__(self, parent, ws_clients, global_config):
+		self.parent = parent
+		print("init rooms")
+		self.rooms=[]
+		self.global_config = global_config
+		self.ws_clients = ws_clients
+		self.parent.register("room_", self, self.handleWSMsg,
+			self.onWebSocketOpen, self.onWebSocketClose)
 
-		first it's tried to find the matching room name.
+	def onWebSocketOpen(self,user):
+		peer_ids=[]
+		for user in self.ws_clients:
+			peer_ids.append(user.peer_id)
+		print('User {0} connected, there are {1} clients connected'.format( user.name, len(self.ws_clients)))
+		user.ws.emit('room_introduction', {'id':user.peer_id, '_clientNum':len(self.ws_clients), '_ids': peer_ids})
 
-		If not found, we check if the user belongs to any room
-		(his home) and we return that room
+		# Update everyone that the number of users has changed
+		for user in self.ws_clients:
+			user.ws.emit('room_newUserConnected', {'id':user.peer_id, '_clientNum':len(self.ws_clients), '_ids': peer_ids})
 
-		if this also fails, we place him in the lobby :-)
+	def onWebSocketClose(self,user):
 
+		# Delete this client from the object
+		for any_user in self.ws_clients:
+			if any_user.peer_id!=user.peer_id:
+				any_user.ws.emit('room_userDisconnected',{'clientCount': len(self.ws_clients), '_id':user.peer_id, })
+		print('User ' + user.peer_id + ' dissconeted, there are ' + len(self.ws_clients) + ' clients connected')
+
+	def handleWSMsg(self, data, user):
+		if data['type'] == 'room_remove':
+			remove(data['config'])
+
+		elif data['type'] == 'rtc_move':
+			print('User ' + user.peer_id + ' moves')
+			coordinates={}
+			for any_user in self.ws_clients:
+				if any_user.peer_id==user.peer_id:
+					any_user.pos=data['pos']
+				coordinates[any_user.peer_id]=any_user.pos
+			for user in self.ws_clients:
+				user.ws.emit('room_move', {'coords':coordinates})
+
+		else:
+			print("Command not found:"+data['type'])
+
+	def remove(self, user, user_died):
+		'''removes a user out of its group, if there's any 
 		'''
-		print("find_room_by_name not implemented yet")
-		return Room.rooms[0]
-	
-	def user_leaves(self,user):
-		self.users.remove(user)
+		pass
