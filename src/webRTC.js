@@ -3,6 +3,8 @@
  * Class to manage the WebRTC audio connections
  */
 
+require("babel-core/register");
+require("babel-polyfill");
 
 class WebRTC  {
 
@@ -23,58 +25,50 @@ class WebRTC  {
 		this.local_media_stream = null /* our own microphone / webcam */
 		this.peers = {}                 /* keep track of our peer connections, indexed by peer_id (aka socket.io id) */
 		this.peer_media_elements = {}  /* keep track of our <video>/<audio> tags, indexed by peer_id */
-	}
-
-	guidGenerator () {
-		var S4 = function () {
-			return (((1 + Math.random()) * 0x10000) | 0).toString(16).substring(1)
+		this.onWebSocketOpen = () => {
+			console.log("onWebSocketOpen in webRTC")
+			this.setup_local_media( () => {
+				/* once the user has given us access to their
+					* microphone/camcorder, rtc_join the room and start peering up */
+				this.join_chat_room(this, this.DEFAULT_ROOM, { 'whatever-you-want-here': 'stuff' });
+			});
+	
 		}
-		return (S4() + S4() + "-" + S4() + "-" + S4() + "-" + S4() + "-" + S4() + S4() + S4())
-	}
-
-	onWebSocketOpen () {
-		console.log("onWebSocketOpen in webRTC")
-		this.setup_local_media(function () {
-			/* once the user has given us access to their
-				* microphone/camcorder, rtc_join the room and start peering up */
-			this.join_chat_room(this.DEFAULT_ROOM, { 'whatever-you-want-here': 'stuff' });
-		});
-
-	}
-
-	onWebSocketClose () {
-		console.log("onWebSocketClose in webRTC")
-		/* Tear down all of our peer connections and remove all the
-			* media divs when we disconnect */
-		for (peer_id in this.peer_media_elements) {
-			this.peer_media_elements[peer_id].remove()
+		this.onWebSocketClose = () => {
+			console.log("onWebSocketClose in webRTC")
+			/* Tear down all of our peer connections and remove all the
+				* media divs when we disconnect */
+			for (peer_id in this.peer_media_elements) {
+				this.peer_media_elements[peer_id].remove()
+			}
+			for (peer_id in this.peers) {
+				this.peers[peer_id].close()
+			}
+			this.peers = {}
+			this.peer_media_elements = {}
 		}
-		for (peer_id in this.peers) {
-			this.peers[peer_id].close()
-		}
-		this.peers = {}
-		this.peer_media_elements = {}
 	}
+
 
 	init (webSocket) {
 		console.log("init webRTC")
-		webSocket.register("rtc_", this.handleWSMsg,this.onWebSocketOpen,this.onWebSocketClose)
+		webSocket.register("rtc_",(data)=>{this.handleWSMsg(this,data)},this.onWebSocketOpen,this.onWebSocketClose)
 		this.emit=webSocket.emit
 	}
 
-	handleWSMsg (data) {
+	handleWSMsg (self,data) {
 		switch (data.type) {
 			case "rtc_addPeer":
-				this.do_addPeer(data.config)
+				this.do_addPeer(self,data.config)
 				break;
 			case "rtc_sessionDescription":
-				this.do_sessionDescription(data.config)
+				this.do_sessionDescription(self,data.config)
 				break;
 			case "rtc_iceCandidate":
-				this.do_iceCandidate(data.config)
+				this.do_iceCandidate(self,data.config)
 				break;
 			case "rtc_removePeer":
-				this.do_removePeer(data.config)
+				this.do_removePeer(self,data.config)
 				break;
 			default:
 				break;
@@ -88,25 +82,25 @@ class WebRTC  {
 	* in the room you will connect directly to the other 5, so there will be a total of 15 
 	* connections in the network). 
 	*/
-	do_addPeer (config) {
+	do_addPeer (self,config) {
 		console.log('Signaling server said to add peer:', config)
 		var peer_id = config.peer_id
-		if (peer_id in this.peers) {
+		if (peer_id in self.peers) {
 			/* This could happen if the user joins multiple rooms where the other peer is also in. */
 			console.log("Already connected to peer ", peer_id)
 			return
 		}
 		var peer_connection = new RTCPeerConnection(
-			{ "iceServers": this.ICE_SERVERS },
+			{ "iceServers": self.ICE_SERVERS },
 			{ "optional": [{ "DtlsSrtpKeyAgreement": true }] } /* this will no longer be needed by chrome
 													* eventually (supposedly), but is necessary 
 													* for now to get firefox to talk to chrome */
 		)
-		this.peers[peer_id] = peer_connection
+		self.peers[peer_id] = peer_connection
 
 		peer_connection.onicecandidate = function (event) {
 			if (event.candidate) {
-				this.emit('rtc_relayICECandidate', {
+				self.emit('rtc_relayICECandidate', {
 					'peer_id': peer_id,
 					'ice_candidate': {
 						'sdpMLineIndex': event.candidate.sdpMLineIndex,
@@ -117,19 +111,19 @@ class WebRTC  {
 		}
 		peer_connection.onaddstream = function (event) {
 			console.log("onAddStream", event)
-			var remote_media = this.USE_VIDEO ? $("<video>") : $("<audio>");
+			var remote_media = self.USE_VIDEO ? $("<video>") : $("<audio>");
 			remote_media.attr("autoplay", "autoplay")
-			if (this.MUTE_AUDIO_BY_DEFAULT) {
+			if (self.MUTE_AUDIO_BY_DEFAULT) {
 				remote_media.attr("muted", "true")
 			}
 			remote_media.attr("controls", "")
-			this.peer_media_elements[peer_id] = remote_media
+			self.peer_media_elements[peer_id] = remote_media
 			$('body').append(remote_media)
-			this.attachMediaStream(remote_media[0], event.stream)
+			self.attachMediaStream(remote_media[0], event.stream)
 		}
 
 		/* Add our local stream */
-		peer_connection.addStream(this.local_media_stream)
+		peer_connection.addStream(self.local_media_stream)
 
 		/* Only one side of the peer connection should create the
 			* offer, the signaling server picks one to be the offerer. 
@@ -143,7 +137,7 @@ class WebRTC  {
 					console.log("Local offer description is: ", local_description)
 					peer_connection.setLocalDescription(local_description,
 						function () {
-							this.emit('rtc_relaySessionDescription',
+							self.emit('rtc_relaySessionDescription',
 								{ 'peer_id': peer_id, 'session_description': local_description })
 							console.log("Offer setLocalDescription succeeded")
 						},
@@ -163,10 +157,10 @@ class WebRTC  {
 	 * the 'offerer' sends a description to the 'answerer' (with type
 	 * "offer"), then the answerer sends one back (with type "answer").  
 	 */
-	do_sessionDescription (config) {
+	do_sessionDescription (self,config) {
 		console.log('Remote description received: ', config)
 		var peer_id = config.peer_id
-		var peer = this.peers[peer_id]
+		var peer = self.peers[peer_id]
 		var remote_description = config.session_description
 		console.log(config.session_description)
 
@@ -181,7 +175,7 @@ class WebRTC  {
 							console.log("Answer description is: ", local_description)
 							peer.setLocalDescription(local_description,
 								function () {
-									this.emit('rtc_relaySessionDescription',
+									self.emit('rtc_relaySessionDescription',
 										{ 'peer_id': peer_id, 'session_description': local_description })
 									console.log("Answer setLocalDescription succeeded")
 								},
@@ -205,8 +199,8 @@ class WebRTC  {
 	 * The offerer will send a number of ICE Candidate blobs to the answerer so they 
 	 * can begin trying to find the best path to one another on the net.
 	 */
-	do_iceCandidate (config) {
-		var peer = this.peers[config.peer_id];
+	do_iceCandidate (self,config) {
+		var peer = self.peers[config.peer_id];
 		var ice_candidate = config.ice_candidate;
 		peer.addIceCandidate(new RTCIceCandidate(ice_candidate));
 	}
@@ -222,22 +216,22 @@ class WebRTC  {
 	 * function do_disconnect') code will kick in and tear down
 	 * all the peer sessions.
 	 */
-	do_removePeer (config) {
+	do_removePeer (self,config) {
 		console.log('Signaling server said to remove peer:', config)
 		var peer_id = config.peer_id
-		if (peer_id in this.peer_media_elements) {
-			this.peer_media_elements[peer_id].remove()
+		if (peer_id in self.peer_media_elements) {
+			self.peer_media_elements[peer_id].remove()
 		}
-		if (peer_id in this.peers) {
-			this.peers[peer_id].close()
+		if (peer_id in self.peers) {
+			self.peers[peer_id].close()
 		}
 
-		delete this.peers[peer_id]
-		delete this.peer_media_elements[config.peer_id]
+		delete self.peers[peer_id]
+		delete self.peer_media_elements[config.peer_id]
 	}
 
-	join_chat_room (room, userdata) {
-		this.emit('_join', { "room": room, "name": "Alice", "peer_id": this.guidGenerator(), "userdata": userdata })
+	join_chat_room (self,room, userdata) {
+		self.emit('_join', { "room": room, "name": "Alice",  "userdata": userdata })
 	}
 
 	remove_chat_room (room) {

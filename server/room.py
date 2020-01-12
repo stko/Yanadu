@@ -15,15 +15,7 @@ class Room:
 			self.onWebSocketOpen, self.onWebSocketClose)
 
 	def onWebSocketOpen(self,user):
-		peer_ids=[]
-		for user in self.ws_clients:
-			peer_ids.append(user.peer_id)
-		print('User {0} connected, there are {1} clients connected'.format( user.name, len(self.ws_clients)))
-		user.ws.emit('room_introduction', {'id':user.peer_id, '_clientNum':len(self.ws_clients), '_ids': peer_ids})
-
-		# Update everyone that the number of users has changed
-		for user in self.ws_clients:
-			user.ws.emit('room_newUserConnected', {'id':user.peer_id, '_clientNum':len(self.ws_clients), '_ids': peer_ids})
+		pass
 
 	def onWebSocketClose(self,user):
 
@@ -32,6 +24,16 @@ class Room:
 			if any_user.peer_id!=user.peer_id:
 				any_user.ws.emit('room_userDisconnected',{'clientCount': len(self.ws_clients), '_id':user.peer_id, })
 		print('User ' + user.peer_id + ' dissconeted, there are ' + len(self.ws_clients) + ' clients connected')
+
+	def user_enters_room(self, user):
+		peer_ids=[]
+		for user in self.ws_clients:
+			peer_ids.append(user.peer_id)
+		print('User {0} connected, there are {1} clients connected'.format( user.name, len(self.ws_clients)))
+		user.ws.emit('room_introduction', {'id':user.peer_id, '_clientNum':len(self.ws_clients), '_ids': peer_ids})
+		# Update everyone that the number of users has changed
+		for user in self.ws_clients:
+			user.ws.emit('room_newUserConnected', {'id':user.peer_id, '_clientNum':len(self.ws_clients), '_ids': peer_ids})
 
 	def handleWSMsg(self, data, user):
 		if data['type'] == 'room_remove':
