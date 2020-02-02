@@ -6,8 +6,11 @@
 class WebService {
 
 	constructor(){
-		//this.SIGNALING_SERVER = "wss://" + window.location.hostname + ":" + window.location.port
-		this.SIGNALING_SERVER = "ws://" + window.location.hostname + ":" + window.location.port
+		let ws_protocol="ws://"
+		if (window.location.protocol=="https:"){
+			ws_protocol="wss://"
+		}
+		this.SIGNALING_SERVER = ws_protocol + window.location.hostname + ":" + window.location.port
 		this.signaling_socket =  null   /* our socket.io connection to our webserver */
 		this.modules = {} /* contains the registered modules */
 		//alias for sending JSON encoded messages

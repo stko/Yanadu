@@ -27,7 +27,7 @@ class WebRTC  {
 		this.peer_media_elements = {}  /* keep track of our <video>/<audio> tags, indexed by peer_id */
 		this.onWebSocketOpen = () => {
 			console.log("onWebSocketOpen in webRTC")
-			this.setup_local_media( () => {
+			this.setup_local_media(this, () => {
 				/* once the user has given us access to their
 					* microphone/camcorder, rtc_join the room and start peering up */
 				this.join_chat_room(this, this.DEFAULT_ROOM, { 'whatever-you-want-here': 'stuff' });
@@ -242,7 +242,7 @@ class WebRTC  {
 	/***********************/
 	/** Local media stuff **/
 	/***********************/
-	setup_local_media (callback, errorback) {
+	setup_local_media (self, callback, errorback) {
 		if (this.local_media_stream != null) {  /* ie, if we've already been initialized */
 			if (callback) callback()
 			return;
@@ -283,29 +283,45 @@ class WebRTC  {
 			});
 		*/
 		// And that's my replacement..
-
-		async function getMedia(constraints) {
+		
+		async function getMedia(self, constraints) {
 			let stream = null;
 			try {
+				console.log("constraints",constraints)
+				if (!navigator.mediaDevices){
+					console.log("navigator.mediaDevices gibts nicht")
+				}else{
+					if (!navigator.mediaDevices.getUserMedia){
+						console.log("navigator.mediaDevices.getUserMedia gibts nicht")
+					}
+				}
 				stream = await navigator.mediaDevices.getUserMedia(constraints)
-				/* use the stream */
-				console.log("Access granted to audio/video")
-				this.local_media_stream = stream
-				var local_media = this.this.USE_VIDEO ? $("<video>") : $("<audio>")
-				local_media.attr("autoplay", "autoplay")
-				local_media.attr("muted", "true") // always mute ourselves by default 
-				local_media.attr("controls", "")
-				$('body').append(local_media);
-				this.attachMediaStream(local_media[0], stream)
+				// use the stream 
+				console.log("Access granted (bla) to audio/video")
+				self.local_media_stream = stream
+				console.log("geht 0")
+				var local_media = self.USE_VIDEO ? document.createElement("video") :  document.createElement("audio")
+				console.log("geht 1",local_media)
+				console.log(local_media)
+				console.log("geht 1b")
+				local_media.autoplay="autoplay"
+				local_media.muted =true // always mute ourselves by default 
+				local_media.controls =""
+				console.log("geht 2")
+				document.body.appendChild(local_media);
+				console.log("geht 3")
+				self.attachMediaStream(local_media, stream)
+				console.log("geht 4")
 				if (callback) callback()
+				console.log("geht 5")
 			} catch (err) {
-				/* handle the error */
+				// handle the error 
 				console.log("Access denied for audio/video")
 				alert("You chose not to provide access to the camera/microphone, demo will not work.")
 				if (errorback) errorback()
 			}
 		}
-		getMedia({ audio:  true })
+		getMedia(self, { audio:  true })
 	}
 }
 
