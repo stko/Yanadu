@@ -22,6 +22,8 @@ from base64 import b64encode
 from room import Room
 from uuid import uuid4
 
+from pprint import pprint
+
 VER = sys.version_info[0]
 if VER >= 3:
 	from socketserver import ThreadingMixIn
@@ -99,11 +101,7 @@ class WSXanaduHandler(HTTPWebSocketsHandler):
 			self.log_message('join %s', data['config'])
 			self.user.name = data['config']["name"]
 			#self.user.peer_id = data['config']["peer_id"]
-			self.user.room = Room.find_room_by_name( None,self.user.peer_id, data['config']["room"])
-			self.user.room.users.append(self.user)
-			room = self.get_module("room_")
-			if room:
-				room["module"].user_enters_room(self.user)
+			self.user.room = Room.find_room_by_name( self.user, data['config']["room"])
 			rtc = self.get_module("rtc_")
 			if rtc:
 				for other_user in self.user.room.users:
@@ -173,7 +171,7 @@ def _ws_main():
 		else:
 			print('started http server at port %d' % (port,))
 		WebRTC(server, ws_clients, global_config)
-		Room(server, ws_clients, global_config)
+		Room.init(server, global_config)
 		origin_dir = os.path.dirname(__file__)
 		web_dir = os.path.join(os.path.dirname(__file__), '../public')
 		os.chdir(web_dir)

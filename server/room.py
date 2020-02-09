@@ -1,52 +1,78 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+class SingleRoom:
+	pass
+
 class Room:
 	''' provides all functions to load rooms
 	'''
+	
+	@classmethod 
+	def find_room_by_name( cls, user, room_name):
+		room= cls.rooms["default"]
+		if room==None:
+			room=Room()
+			cls.rooms["default"]=room
+		room._user_enters_room(user)
+		return room
 
-	def __init__(self, parent, ws_clients, global_config):
-		self.parent = parent
+
+
+	@classmethod 
+	def init(cls, parent, global_config):
+		cls.parent = parent
+		cls.rooms={"default":None}
 		print("init rooms")
-		self.rooms=[]
-		self.global_config = global_config
-		self.ws_clients = ws_clients
-		self.parent.register("room_", self, self.handleWSMsg,
-			self.onWebSocketOpen, self.onWebSocketClose)
+		cls.global_config = global_config
+		cls.parent.register("room_", cls, cls.handleWSMsg,
+			cls.onWebSocketOpen, cls.onWebSocketClose)
 
-	def onWebSocketOpen(self,user):
+	def __init__(self):
+		print("init single rooms")
+		self.users = []
+
+	@classmethod 
+	def onWebSocketOpen(cls,user):
 		pass
 
-	def onWebSocketClose(self,user):
+	@classmethod 
+	def onWebSocketClose(cls,user):
 
 		# Delete this client from the object
-		for any_user in self.ws_clients:
+		for any_user in user.users:
 			if any_user.peer_id!=user.peer_id:
-				any_user.ws.emit('room_userDisconnected',{'clientCount': len(self.ws_clients), '_id':user.peer_id, })
-		print('User ' + user.peer_id + ' dissconeted, there are ' + len(self.ws_clients) + ' clients connected')
+				any_user.ws.emit('room_userDisconnected',{'clientCount': len(self.users), '_id':user.peer_id, })
+		print('User ' + user.peer_id + ' disconnected, there are ' + len(self.users) + ' clients connected')
 
-	def user_enters_room(self, user):
+	def _user_enters_room(self, user):
 		peer_ids=[]
-		for user in self.ws_clients:
+		for user in self.users:
 			peer_ids.append(user.peer_id)
-		print('User {0} connected, there are {1} clients connected'.format( user.name, len(self.ws_clients)))
-		user.ws.emit('room_introduction', {'id':user.peer_id, '_clientNum':len(self.ws_clients), '_ids': peer_ids})
+		print('User {0} connected, there are {1} clients connected'.format( user.name, len(self.users)))
+		user.ws.emit('room_introduction', {'id':user.peer_id, '_clientNum':len(self.users), '_ids': peer_ids})
 		# Update everyone that the number of users has changed
-		for user in self.ws_clients:
-			user.ws.emit('room_newUserConnected', {'id':user.peer_id, '_clientNum':len(self.ws_clients), '_ids': peer_ids})
+		for user in self.users:
+			user.ws.emit('room_newUserConnected', {'id':user.peer_id, '_clientNum':len(self.users), '_ids': peer_ids})
+		self.users.append(user)
 
+
+	@classmethod 
 	def handleWSMsg(self, data, user):
 		if data['type'] == 'room_remove':
 			remove(data['config'])
 
 		elif data['type'] == 'room_move':
 			coordinates={}
-			for any_user in self.ws_clients:
-				if any_user.peer_id==user.peer_id:
-					any_user.pos=data['config']['pos']
-				coordinates[any_user.peer_id]=any_user.pos
-			for user in self.ws_clients:
-				user.ws.emit('room_move', {'coords':coordinates})
+			try:
+				for any_user in user.room.users:
+					if any_user.peer_id==user.peer_id:
+						any_user.pos=data['config']['pos']
+					coordinates[any_user.peer_id]=any_user.pos
+				for user in user.room.users:
+					user.ws.emit('room_move', {'coords':coordinates})
+			except AttributeError:
+				pass 
 
 		else:
 			print("Command not found:"+data['type'])

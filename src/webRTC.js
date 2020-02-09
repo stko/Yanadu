@@ -111,15 +111,16 @@ class WebRTC  {
 		}
 		peer_connection.onaddstream = function (event) {
 			console.log("onAddStream", event)
-			var remote_media = self.USE_VIDEO ? $("<video>") : $("<audio>");
-			remote_media.attr("autoplay", "autoplay")
+			var remote_media = self.USE_VIDEO ? document.createElement("video") :  document.createElement("audio")
+			console.log(remote_media)
+			remote_media.autoplay="autoplay"
 			if (self.MUTE_AUDIO_BY_DEFAULT) {
-				remote_media.attr("muted", "true")
+				remote_media.muted =true
 			}
-			remote_media.attr("controls", "")
+			remote_media.controls = true
 			self.peer_media_elements[peer_id] = remote_media
-			$('body').append(remote_media)
-			self.attachMediaStream(remote_media[0], event.stream)
+			document.body.appendChild(remote_media);
+			self.attachMediaStream(remote_media, event.stream)
 		}
 
 		/* Add our local stream */
@@ -235,7 +236,7 @@ class WebRTC  {
 	}
 
 	remove_chat_room (room) {
-		this.emit('rtc_remove', room)
+		self.emit('rtc_remove', room)
 	}
 
 
@@ -297,23 +298,16 @@ class WebRTC  {
 				}
 				stream = await navigator.mediaDevices.getUserMedia(constraints)
 				// use the stream 
-				console.log("Access granted (bla) to audio/video")
+				console.log("Access granted to audio/video")
 				self.local_media_stream = stream
-				console.log("geht 0")
 				var local_media = self.USE_VIDEO ? document.createElement("video") :  document.createElement("audio")
-				console.log("geht 1",local_media)
 				console.log(local_media)
-				console.log("geht 1b")
 				local_media.autoplay="autoplay"
 				local_media.muted =true // always mute ourselves by default 
-				local_media.controls =""
-				console.log("geht 2")
+				local_media.controls =true
 				document.body.appendChild(local_media);
-				console.log("geht 3")
 				self.attachMediaStream(local_media, stream)
-				console.log("geht 4")
 				if (callback) callback()
-				console.log("geht 5")
 			} catch (err) {
 				// handle the error 
 				console.log("Access denied for audio/video")
