@@ -110,12 +110,12 @@ class Room  {
 	
 	//Update when one of the users moves in space
 	do_userPositions (self, config){
-		for(let i = 0; i < Object.keys(config._clientProps).length; i++){
-			if(Object.keys(config._clientProps)[i] != self.id){
+		for(let i = 0; i < Object.keys(config).length; i++){
+			if(Object.keys(config)[i] != self.id){
 
 				//Store the values
-				let oldPos = self.clients[Object.keys(config._clientProps)[i]].mesh.position
-				let newPos = config._clientProps[Object.keys(config._clientProps)[i]].position
+				let oldPos = self.clients[Object.keys(config)[i]].mesh.position
+				let newPos = config[Object.keys(config)[i]]
 
 				//Create a vector 3 and lerp the new values with the old values
 				let lerpedPos = new THREE.Vector3()
@@ -124,7 +124,7 @@ class Room  {
 				lerpedPos.z = THREE.Math.lerp(oldPos.z, newPos[2], 0.3)
 
 				//Set the position
-				self.clients[Object.keys(config._clientProps)[i]].mesh.position.set(lerpedPos.x, lerpedPos.y, lerpedPos.z);
+				self.clients[Object.keys(config)[i]].mesh.position.set(lerpedPos.x, lerpedPos.y, lerpedPos.z);
 			}
 		}
 	}

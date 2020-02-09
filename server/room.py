@@ -70,8 +70,9 @@ class Room:
 						any_user.pos=data['config']['pos']
 					coordinates[any_user.peer_id]=any_user.pos
 				for user in user.room.users:
-					user.ws.emit('room_move', {'coords':coordinates})
+					user.ws.emit('room_userPositions', {'coords':coordinates})
 			except AttributeError:
+				print("error on move")
 				pass 
 
 		else:

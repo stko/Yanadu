@@ -120,7 +120,8 @@ class WebRTC  {
 			remote_media.controls = true
 			self.peer_media_elements[peer_id] = remote_media
 			document.body.appendChild(remote_media);
-			self.attachMediaStream(remote_media, event.stream)
+			// was self.attachMediaStream()
+			remote_media.srcObject = event.stream
 		}
 
 		/* Add our local stream */
@@ -258,10 +259,6 @@ class WebRTC  {
 			navigator.mozGetUserMedia ||
 			navigator.msGetUserMedia)
 
-		this.attachMediaStream = function (element, stream) {
-			console.log('DEPRECATED, attachMediaStream will soon be removed.')
-			element.srcObject = stream;
-		};
 
 		/*   This is the original version ****************
 		navigator.getUserMedia({"audio":this.USE_AUDIO, "video":this.USE_VIDEO},
@@ -306,7 +303,7 @@ class WebRTC  {
 				local_media.muted =true // always mute ourselves by default 
 				local_media.controls =true
 				document.body.appendChild(local_media);
-				self.attachMediaStream(local_media, stream)
+				local_media.srcObject = stream
 				if (callback) callback()
 			} catch (err) {
 				// handle the error 
