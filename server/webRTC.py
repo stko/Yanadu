@@ -98,7 +98,7 @@ class WebRTC:
 		'''removes a user out of its group, if there's any 
 		'''
 
-		print("[" + user.peer_id + "] remove ")
+		print("webRTC [" + user.peer_id + "] remove ")
 		group = self.get_user_group(user)
 		if not group:
 			return

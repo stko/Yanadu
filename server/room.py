@@ -34,16 +34,14 @@ class Room:
 
 	@classmethod 
 	def onWebSocketOpen(cls,user):
+		print("room: websocket opened")
 		pass
 
 	@classmethod 
 	def onWebSocketClose(cls,user):
-
-		# Delete this client from the object
-		for any_user in user.users:
-			if any_user.peer_id!=user.peer_id:
-				any_user.ws.emit('room_userDisconnected',{'clientCount': len(self.users), '_id':user.peer_id, })
-		print('User ' + user.peer_id + ' disconnected, there are ' + len(self.users) + ' clients connected')
+		# Delete this client from his room
+		user.room.remove(user,True)
+		print('User ' + user.peer_id + ' websocket closed, removed from room')
 
 	def _user_enters_room(self, user):
 		peer_ids=[]
@@ -58,9 +56,9 @@ class Room:
 
 
 	@classmethod 
-	def handleWSMsg(self, data, user):
+	def handleWSMsg(cls, data, user):
 		if data['type'] == 'room_remove':
-			remove(data['config'])
+			remove(data['config'],False)
 
 		elif data['type'] == 'room_move':
 			coordinates={}
@@ -81,4 +79,7 @@ class Room:
 	def remove(self, user, user_died):
 		'''removes a user out of its group, if there's any 
 		'''
-		pass
+		for any_user in self.users:
+			if any_user.peer_id!=user.peer_id:
+				any_user.ws.emit('room_userDisconnected',{ '_id':user.peer_id })
+		self.users.remove(user)

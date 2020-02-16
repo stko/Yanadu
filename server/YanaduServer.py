@@ -86,13 +86,13 @@ class WSXanaduHandler(HTTPWebSocketsHandler):
 	def on_ws_message(self, message):
 		if message is None:
 			message = ''
-		self.log_message('websocket received "%s"', str(message))
+		#self.log_message('websocket received "%s"', str(message))
 		try:
 			data = json.loads(message)
 		except:
 			self.log_message('%s', 'Invalid JSON')
 			return
-		self.log_message('json msg: %s', message)
+		#self.log_message('json msg: %s', message)
 
 		if data['type'] == 'msg':
 			self.log_message('msg %s', data['data'])
@@ -132,16 +132,11 @@ class WSXanaduHandler(HTTPWebSocketsHandler):
 
 	def on_ws_closed(self):
 		self.log_message('%s', 'websocket closed')
-		# was that websocket already joined?
-		try:
-			self.user.peer_id
-			self.user.room.user_leaves(self.user)
-		except:
-			pass
 		global ws_clients
 		ws_clients.remove(self.user)
 		global modules
-		for module in modules.values():
+		#for module in modules.values():
+		for module_name, module in modules.items():
 			module["onWebSocketClose"](self.user)
 
 	def setup(self):
@@ -154,7 +149,7 @@ class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
 	def register(self, prefix, module, wsMsghandler, wsOnOpen, wsOnClose):
 		global modules
 		modules[prefix] = {'module': module, 'msg': wsMsghandler,
-						   'onWebSocketOpen': wsOnOpen, 'onWebSocketClose': wsOnOpen}
+						   'onWebSocketOpen': wsOnOpen, 'onWebSocketClose': wsOnClose}
 
 
 def _ws_main():

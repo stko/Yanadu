@@ -58,6 +58,7 @@ class Room  {
 	
 	//On connection server sends the client his ID
 	do_introduction(self,config){
+		console.log("do_introduction")
 		for(let i = 0; i < config._ids.length; i++){
 			if(config._ids[i] != config._id){
 				self.clients[config._ids[i]] = {
@@ -70,7 +71,9 @@ class Room  {
 			self.glScene.scene.add(self.clients[config._ids[i]].mesh)
 			}
 		}
-		self.id = config._id
+		console.log("do_introduction self.id before",self.id)
+		self.id = config.id
+		console.log("do_introduction self.id after",self.id)
 	}
 	
 	do_newUserConnected(self, config){
@@ -110,12 +113,13 @@ class Room  {
 	
 	//Update when one of the users moves in space
 	do_userPositions (self, config){
-		for(let i = 0; i < Object.keys(config).length; i++){
-			if(Object.keys(config)[i] != self.id){
-
+		let coords=config.coords
+		for(let i = 0; i < Object.keys(coords).length; i++){
+			if(Object.keys(coords)[i] != self.id){
+				console.log("self.id", self.id, "other", Object.keys(coords)[i] )
 				//Store the values
-				let oldPos = self.clients[Object.keys(config)[i]].mesh.position
-				let newPos = config[Object.keys(config)[i]]
+				let oldPos = self.clients[Object.keys(coords)[i]].mesh.position
+				let newPos = coords[Object.keys(coords)[i]]
 
 				//Create a vector 3 and lerp the new values with the old values
 				let lerpedPos = new THREE.Vector3()
@@ -124,7 +128,7 @@ class Room  {
 				lerpedPos.z = THREE.Math.lerp(oldPos.z, newPos[2], 0.3)
 
 				//Set the position
-				self.clients[Object.keys(config)[i]].mesh.position.set(lerpedPos.x, lerpedPos.y, lerpedPos.z);
+				self.clients[Object.keys(coords)[i]].mesh.position.set(lerpedPos.x, lerpedPos.y, lerpedPos.z);
 			}
 		}
 	}
