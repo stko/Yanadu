@@ -35,6 +35,8 @@ module.exports = (THREE) =>{
 
 		this.mouseX = 0;
 		this.mouseY = 0;
+		this.mouseXratio = 0;
+		this.mouseYratio = 0;
 
 		this.lat = 0;
 		this.lon = 0;
@@ -129,11 +131,15 @@ module.exports = (THREE) =>{
 
 				this.mouseX = event.pageX - this.viewHalfX;
 				this.mouseY = event.pageY - this.viewHalfY;
+				this.mouseXratio=this.mouseX*Math.PI/this.viewHalfX;
+				this.mouseYratio=this.mouseY*Math.PI/this.viewHalfY;
 
 			} else {
 
 				this.mouseX = event.pageX - this.domElement.offsetLeft - this.viewHalfX;
 				this.mouseY = event.pageY - this.domElement.offsetTop - this.viewHalfY;
+				this.mouseXratio=this.mouseX*Math.PI/this.viewHalfX;
+				this.mouseYratio=this.mouseY*Math.PI/this.viewHalfY;
 
 			}
 
@@ -238,6 +244,10 @@ module.exports = (THREE) =>{
 			this.phi = THREE.Math.degToRad( 90 - this.lat );
 
 			this.theta = THREE.Math.degToRad( this.lon );
+
+			this.phi = this.mouseYratio;
+
+			this.theta = this.mouseXratio;
 
 			if ( this.constrainVertical ) {
 

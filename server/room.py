@@ -14,6 +14,7 @@ class Room:
 		if room==None:
 			room=Room()
 			cls.rooms["default"]=room
+		print("room add user",repr(user))
 		room._user_enters_room(user)
 		return room
 
@@ -33,41 +34,42 @@ class Room:
 		self.users = []
 
 	@classmethod 
-	def onWebSocketOpen(cls,user):
+	def onWebSocketOpen(cls,this_user):
 		print("room: websocket opened")
 		pass
 
 	@classmethod 
-	def onWebSocketClose(cls,user):
+	def onWebSocketClose(cls,this_user):
 		# Delete this client from his room
-		user.room.remove(user,True)
-		print('User ' + user.peer_id + ' websocket closed, removed from room')
+		this_user.room.remove(this_user,True)
+		print('User ' + this_user.peer_id + ' websocket closed, removed from room')
 
-	def _user_enters_room(self, user):
+	def _user_enters_room(self, this_user):
+		self.users.append(this_user)
 		peer_ids=[]
 		for user in self.users:
 			peer_ids.append(user.peer_id)
-		print('User {0} connected, there are {1} clients connected'.format( user.name, len(self.users)))
-		user.ws.emit('room_introduction', {'id':user.peer_id, '_clientNum':len(self.users), '_ids': peer_ids})
 		# Update everyone that the number of users has changed
 		for user in self.users:
-			user.ws.emit('room_newUserConnected', {'id':user.peer_id, '_clientNum':len(self.users), '_ids': peer_ids})
-		self.users.append(user)
+			if user != this_user:
+				user.ws.emit('room_newUserConnected', {'id':this_user.peer_id, '_clientNum':len(self.users), '_ids': peer_ids})
+		print('User {0} connected, there are {1} clients connected'.format( this_user.name, len(self.users)))
+		this_user.ws.emit('room_introduction', {'id':this_user.peer_id, '_clientNum':len(self.users), '_ids': peer_ids})
 
 
 	@classmethod 
-	def handleWSMsg(cls, data, user):
+	def handleWSMsg(cls, data, this_user):
 		if data['type'] == 'room_remove':
 			remove(data['config'],False)
 
 		elif data['type'] == 'room_move':
 			coordinates={}
 			try:
-				for any_user in user.room.users:
-					if any_user.peer_id==user.peer_id:
+				for any_user in this_user.room.users:
+					if any_user.peer_id==this_user.peer_id:
 						any_user.pos=data['config']['pos']
 					coordinates[any_user.peer_id]=any_user.pos
-				for user in user.room.users:
+				for user in this_user.room.users:
 					user.ws.emit('room_userPositions', {'coords':coordinates})
 			except AttributeError:
 				print("error on move")
@@ -76,10 +78,10 @@ class Room:
 		else:
 			print("Command not found:"+data['type'])
 
-	def remove(self, user, user_died):
+	def remove(self, this_user, user_died):
 		'''removes a user out of its group, if there's any 
 		'''
 		for any_user in self.users:
-			if any_user.peer_id!=user.peer_id:
-				any_user.ws.emit('room_userDisconnected',{ '_id':user.peer_id })
-		self.users.remove(user)
+			if any_user.peer_id!=this_user.peer_id:
+				any_user.ws.emit('room_userDisconnected',{ 'id':this_user.peer_id })
+		self.users.remove(this_user)

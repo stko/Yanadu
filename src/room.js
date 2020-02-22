@@ -58,9 +58,9 @@ class Room  {
 	
 	//On connection server sends the client his ID
 	do_introduction(self,config){
-		console.log("do_introduction")
+		console.log("do_introduction",config)
 		for(let i = 0; i < config._ids.length; i++){
-			if(config._ids[i] != config._id){
+			if(config._ids[i] != config.id || true){
 				self.clients[config._ids[i]] = {
 				mesh: new THREE.Mesh(
 					new THREE.BoxGeometry(1,1,1),
@@ -71,23 +71,21 @@ class Room  {
 			self.glScene.scene.add(self.clients[config._ids[i]].mesh)
 			}
 		}
-		console.log("do_introduction self.id before",self.id)
 		self.id = config.id
-		console.log("do_introduction self.id after",self.id)
 	}
 	
 	do_newUserConnected(self, config){
 		console.log(config._clientNum + ' clients connected')
 		let alreadyHasUser = false;
 		for(let i = 0; i < Object.keys(self.clients).length; i++){
-			if(Object.keys(self.clients)[i] == config._id){
+			if(Object.keys(self.clients)[i] == config.id){
 				alreadyHasUser = true;
 				break;
 			}
 		}
-		if(config._id != self.id && !alreadyHasUser){
-		console.log('A new user connected with the id: ' + config._id)
-		self.clients[config._id] = {
+		if(config.id != self.id && !alreadyHasUser){
+		console.log('A new user connected with the id: ' + config.id)
+		self.clients[config.id] = {
 			mesh: new THREE.Mesh(
 			new THREE.BoxGeometry(1,1,1),
 			new THREE.MeshNormalMaterial()
@@ -95,7 +93,7 @@ class Room  {
 		}
 
 		//Add initial users to the scene
-		self.glScene.scene.add(self.clients[config._id].mesh);
+		self.glScene.scene.add(self.clients[config.id].mesh);
 		}
 	
 	}
@@ -104,10 +102,10 @@ class Room  {
 		//Update the data from the server
 		document.getElementById('numUsers').textContent = config.clientCount;
 
-		if(config._id != self.id){
-		console.log('A user disconnected with the id: ' + config._id)
-		self.glScene.scene.remove(self.clients[config._id].mesh)
-		delete self.clients[config._id]
+		if(config.id != self.id){
+		console.log('A user disconnected with the id: ' + config.id)
+		self.glScene.scene.remove(self.clients[config.id].mesh)
+		delete self.clients[config.id]
 		}
 	}
 	
@@ -115,8 +113,7 @@ class Room  {
 	do_userPositions (self, config){
 		let coords=config.coords
 		for(let i = 0; i < Object.keys(coords).length; i++){
-			if(Object.keys(coords)[i] != self.id){
-				console.log("self.id", self.id, "other", Object.keys(coords)[i] )
+			if(Object.keys(coords)[i] != self.id || true){
 				//Store the values
 				let oldPos = self.clients[Object.keys(coords)[i]].mesh.position
 				let newPos = coords[Object.keys(coords)[i]]
