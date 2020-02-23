@@ -63,6 +63,10 @@ class User:
 			'position': [0, 0, 0],
 			'rotation': [0, 0, 0]
 		}
+	
+	def	get_user_distance(self, other_user):
+		return sqrt((other_user.pos["position"][0] - self.pos["position"][0])**2 + (other_user.pos["position"][1] - self.pos["position"][1])**2 + (other_user.pos["position"][2] - self.pos["position"][2])**2)
+
 
 
 modules = {}
@@ -120,6 +124,7 @@ class WSXanaduHandler(HTTPWebSocketsHandler):
 			if unknown_msg:
 				self.log_message("Command not found:"+data['type'])
 
+		
 	def on_ws_connected(self):
 		self.log_message('%s', 'websocket connected')
 		self.user = User("", self)

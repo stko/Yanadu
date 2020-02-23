@@ -72,6 +72,7 @@ class Room:
 					coordinates[any_user.peer_id]=any_user.pos
 				for user in this_user.room.users:
 					user.ws.emit('room_userPositions', {'coords':coordinates})
+				this_user.room.check_user_for_group_attendance(this_user)
 			except AttributeError:
 				print("error on move")
 				pass 
@@ -86,3 +87,10 @@ class Room:
 			if any_user.peer_id!=this_user.peer_id:
 				any_user.ws.emit('room_userDisconnected',{ 'id':this_user.peer_id })
 		self.users.remove(this_user)
+
+	
+	def check_user_for_group_attendance(self, user):
+		for other_user in self.users:
+			if other_user != user:
+				print("distance:" , user.get_user_distance(other_user))
+
