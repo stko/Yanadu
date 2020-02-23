@@ -14,10 +14,14 @@ class Room  {
 		this.clients = new Object()
 		self=this
 		this.glScene.on('userMoved', ()=>{
-			this.emit("room_move",{'pos':[this.glScene.camera.position.x, this.glScene.camera.position.y, this.glScene.camera.position.z]})
+			let vector = this.glScene.camera.getWorldDirection();
+			let theta = Math.atan2(vector.x,vector.z);
+			this.emit("room_move",{'pos':[this.glScene.camera.position.x, this.glScene.camera.position.y, this.glScene.camera.position.z],"angle":theta})
 		});
 		this.glScene.on('mouseMoved', ()=>{
-			this.emit("room_move",{'pos':[this.glScene.camera.position.x, this.glScene.camera.position.y, this.glScene.camera.position.z]})
+			let vector = this.glScene.camera.getWorldDirection();
+			let theta = Math.atan2(vector.x,vector.z);
+			this.emit("room_move",{'pos':[this.glScene.camera.position.x, this.glScene.camera.position.y, this.glScene.camera.position.z],"angle":theta})
 		});
 		}
 		
@@ -116,7 +120,9 @@ class Room  {
 			if(Object.keys(coords)[i] != self.id || true){
 				//Store the values
 				let oldPos = self.clients[Object.keys(coords)[i]].mesh.position
-				let newPos = coords[Object.keys(coords)[i]]
+				console.log("coords:",coords)
+				let newPos = coords[Object.keys(coords)[i]].position
+				let newRotation = coords[Object.keys(coords)[i]].rotation
 
 				//Create a vector 3 and lerp the new values with the old values
 				let lerpedPos = new THREE.Vector3()
@@ -125,7 +131,12 @@ class Room  {
 				lerpedPos.z = THREE.Math.lerp(oldPos.z, newPos[2], 0.3)
 
 				//Set the position
-				self.clients[Object.keys(coords)[i]].mesh.position.set(lerpedPos.x, lerpedPos.y, lerpedPos.z);
+				self.clients[Object.keys(coords)[i]].mesh.position.set(lerpedPos.x, lerpedPos.y, lerpedPos.z)
+				//Set the rotation
+				//self.clients[Object.keys(coords)[i]].mesh.rotation.set(newRotation)
+				//self.clients[Object.keys(coords)[i]].mesh.rotation.y += 0.01
+				self.clients[Object.keys(coords)[i]].mesh.rotation.y = newRotation[1]
+	
 			}
 		}
 	}

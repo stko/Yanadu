@@ -67,7 +67,8 @@ class Room:
 			try:
 				for any_user in this_user.room.users:
 					if any_user.peer_id==this_user.peer_id:
-						any_user.pos=data['config']['pos']
+						any_user.pos["position"]=data['config']['pos']
+						any_user.pos["rotation"][1]=data['config']['angle']
 					coordinates[any_user.peer_id]=any_user.pos
 				for user in this_user.room.users:
 					user.ws.emit('room_userPositions', {'coords':coordinates})
