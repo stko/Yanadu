@@ -19,6 +19,7 @@ import threading
 import ssl
 import json
 from base64 import b64encode
+import math
 from room import Room
 from uuid import uuid4
 
@@ -65,7 +66,7 @@ class User:
 		}
 	
 	def	get_user_distance(self, other_user):
-		return sqrt((other_user.pos["position"][0] - self.pos["position"][0])**2 + (other_user.pos["position"][1] - self.pos["position"][1])**2 + (other_user.pos["position"][2] - self.pos["position"][2])**2)
+		return math.sqrt((other_user.pos["position"][0] - self.pos["position"][0])**2 + (other_user.pos["position"][1] - self.pos["position"][1])**2 + (other_user.pos["position"][2] - self.pos["position"][2])**2)
 
 
 
