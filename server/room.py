@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-class SingleRoom:
-	pass
-
 class Room:
 	''' provides all functions to load rooms
 	'''
@@ -17,8 +14,6 @@ class Room:
 		print("room add user",repr(user))
 		room._user_enters_room(user)
 		return room
-
-
 
 	@classmethod 
 	def init(cls, parent, global_config):
@@ -56,7 +51,6 @@ class Room:
 		print('User {0} connected, there are {1} clients connected'.format( this_user.name, len(self.users)))
 		this_user.ws.emit('room_introduction', {'id':this_user.peer_id, '_clientNum':len(self.users), '_ids': peer_ids})
 
-
 	@classmethod 
 	def handleWSMsg(cls, data, this_user):
 		if data['type'] == 'room_remove':
@@ -72,7 +66,7 @@ class Room:
 					coordinates[any_user.peer_id]=any_user.pos
 				for user in this_user.room.users:
 					user.ws.emit('room_userPositions', {'coords':coordinates})
-				this_user.room.check_user_for_group_attendance(this_user)
+				this_user.room.check_user_for_group_attendance(this_user,2.0,4.0)
 			except AttributeError:
 				print("error on move")
 				pass 
@@ -88,9 +82,33 @@ class Room:
 				any_user.ws.emit('room_userDisconnected',{ 'id':this_user.peer_id })
 		self.users.remove(this_user)
 
-	
-	def check_user_for_group_attendance(self, user):
-		for other_user in self.users:
-			if other_user != user:
-				print("distance:" , user.get_user_distance(other_user))
+	def check_user_for_group_attendance(self, user,connect_distance, disconnect_distance):
+		rtc = Room.parent.get_module("rtc_")
+		if rtc:
+			rtc_module=rtc["module"]
+			group_1 = rtc_module.get_user_group(user)
+			if group_1:
+				''' the user is already in a group, so we need to check
+				if he's still close enough to the other group members
+				'''
+				for other_user in group_1:
+					if other_user != user:
+						distance=user.get_user_distance(other_user)
+						if distance <= disconnect_distance:
+							print ("{0} is close enough to {1} ({2}), user can stay in his group".format(user.name,other_user.name,disconnect_distance))
+							return
+				''' no nearby users in the group anymore? 
+				so we have to leave the group
+				'''
+				rtc_module.remove(user, False)
+			else: # user is not in a group, so we search the next nearby other user
+				for other_user in self.users:
+					if other_user != user:
+						distance=user.get_user_distance(other_user)
+						print("distance:" , distance,connect_distance)
+						if distance <= connect_distance:
+							rtc_module.join_users_into_group(
+								user, other_user)
+							break
+
 

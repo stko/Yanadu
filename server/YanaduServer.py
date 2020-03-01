@@ -157,6 +157,14 @@ class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
 		modules[prefix] = {'module': module, 'msg': wsMsghandler,
 						   'onWebSocketOpen': wsOnOpen, 'onWebSocketClose': wsOnClose}
 
+	def get_module(self, prefix):
+		global modules
+		try:
+			return modules[prefix]
+		except:
+			return None
+
+
 
 def _ws_main():
 	try:

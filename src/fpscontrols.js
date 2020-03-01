@@ -35,6 +35,7 @@ module.exports = (THREE) =>{
 
 		this.mouseX = 0;
 		this.mouseY = 0;
+		this.mouseRMB = false;
 		this.mouseXratio = 0;
 		this.mouseYratio = 0;
 
@@ -95,7 +96,10 @@ module.exports = (THREE) =>{
 				switch ( event.button ) {
 
 					case 0: this.moveForward = true; break;
-					case 2: this.moveBackward = true; break;
+					case 2:
+						//this.moveBackward = true;
+						this.mouseRMB = true;
+						break;
 
 				}
 
@@ -115,7 +119,10 @@ module.exports = (THREE) =>{
 				switch ( event.button ) {
 
 					case 0: this.moveForward = false; break;
-					case 2: this.moveBackward = false; break;
+					case 2:
+						this.moveBackward = false;
+						this.mouseRMB = false;
+						break;
 
 				}
 
@@ -239,7 +246,7 @@ module.exports = (THREE) =>{
 
 			this.lon += this.mouseX * actualLookSpeed;
 			if ( this.lookVertical ) this.lat -= this.mouseY * actualLookSpeed * verticalLookRatio;
-
+			if (this.mouseRMB){
 			this.lat = Math.max( - 85, Math.min( 85, this.lat ) );
 			this.phi = THREE.Math.degToRad( 90 - this.lat );
 
@@ -248,7 +255,7 @@ module.exports = (THREE) =>{
 			this.phi = this.mouseYratio;
 
 			this.theta = this.mouseXratio;
-
+			}
 			if ( this.constrainVertical ) {
 
 				this.phi = THREE.Math.mapLinear( this.phi, 0, Math.PI, this.verticalMin, this.verticalMax );

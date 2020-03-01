@@ -10,26 +10,48 @@ class Room  {
 		this.glScene = new Scene()
 		this.id = 0
 		this.emit=emit
+		this.lastPosX=0
+		this.lastPosY=0
+		this.lastAngle=0
 		this.instances = []
 		this.clients = new Object()
 		self=this
 		this.glScene.on('userMoved', ()=>{
-			let vector = this.glScene.camera.getWorldDirection();
-			let theta = Math.atan2(vector.x,vector.z);
-			this.emit("room_move",{'pos':[this.glScene.camera.position.x, this.glScene.camera.position.y, this.glScene.camera.position.z],"angle":theta})
+			this.emit_room_move(this.glScene.camera)
 		});
 		this.glScene.on('mouseMoved', ()=>{
-			let vector = this.glScene.camera.getWorldDirection();
-			let theta = Math.atan2(vector.x,vector.z);
-			this.emit("room_move",{'pos':[this.glScene.camera.position.x, this.glScene.camera.position.y, this.glScene.camera.position.z],"angle":theta})
+			this.emit_room_move(this.glScene.camera)
 		});
 		}
 		
+		poll_movements(self){
+			if (self.glScene && self.glScene.camera && self.emit){
+				self.emit_room_move(self, self.glScene.camera);
+			}
+			self.intervalID = window.setTimeout(function(){self.poll_movements(self);}, 100);
+		}
+
+		emit_room_move(self, camera){
+			if (camera){
+				let vector = camera.getWorldDirection();
+				let theta = Math.atan2(vector.x,vector.z);
+				let newPosX = Math.floor(camera.position.x * 4);
+				let newPosY = Math.floor(camera.position.y * 4);
+				let newAngle = Math.floor(theta * 8 / Math.PI); 
+				if (newPosX != self.lastPosX || newPosY != self.lastPosY || newAngle != self.lastAngle){
+					self.lastPosX = newPosX;
+					self.lastPosY = newPosY;
+					self.lastAngle = newAngle;
+					self.emit("room_move",{'pos':[camera.position.x, camera.position.y, camera.position.z],"angle":theta})
+				}
+			}
+		}
 		
 		init (webSocket) {
 			// try to solve the "self" problem with ()=>{}
 			webSocket.register("room_", (data)=>{this.handleWSMsg(this,data)},this.onWebSocketOpen,this.onWebSocketClose)
 			this.emit=webSocket.emit
+			this.intervalID =  window.setTimeout(()=>{this.poll_movements(this);}, 100);
 		}
 	
 		handleWSMsg (self, data) {

@@ -17,7 +17,9 @@ class WebService {
 		this.emit = (type, config) => {
 			//attach the other peer username to our messages 
 			let message = { 'type': type, 'config': config }
+			if (this.signaling_socket.readyState==1){
 			this.signaling_socket.send(JSON.stringify(message))
+			}
 		}
 		console.log("Construct WebService", this.modules)
 
