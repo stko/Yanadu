@@ -20,7 +20,6 @@ window.showLogin = function (){
 
 window.handleLogin = function (username, pw, remember){
 	document.getElementById('login').style.display='none'
-	alert(username)
 	webService.init(username, pw, remember) // let's rock
 }
 showLogin()

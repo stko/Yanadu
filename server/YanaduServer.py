@@ -41,25 +41,28 @@ try:
 	with open(r'config.yaml') as file:
 		# The FullLoader parameter handles the conversion from YAML
 		# scalar values to Python the dictionary format
-		config = yaml.load(file, Loader=yaml.Loader)
+		global_config = yaml.load(file, Loader=yaml.Loader)
 except:
-	config={
+	global_config={
 		'host': 'localhost',
 		'port': 8000,
 		'secure': True,
-		'credentials': ''
+		'credentials': '',
+		'rooms':{
+			'default' : 'no_idea..'
+		}
 	}
 
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--host", default=config["host"],
+parser.add_argument("--host", default=global_config["host"],
                     help="the IP interface to bound the server to")
-parser.add_argument("-p", "--port", default=config["port"],
+parser.add_argument("-p", "--port", default=global_config["port"],
                     help="the server port")
-parser.add_argument("-s", "--secure", action="store_true", default=config["secure"],
+parser.add_argument("-s", "--secure", action="store_true", default=global_config["secure"],
                     help="use secure https: and wss:")
-parser.add_argument("-c", "--credentials",  default=config["credentials"],
+parser.add_argument("-c", "--credentials",  default=global_config["credentials"],
                     help="user credentials")
 args = parser.parse_args()
 print(repr(args))
@@ -88,7 +91,6 @@ class User:
 
 modules = {}
 ws_clients = []
-global_config={}
 
 
 class WSXanaduHandler(HTTPWebSocketsHandler):

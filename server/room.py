@@ -7,18 +7,28 @@ class Room:
 	
 	@classmethod 
 	def find_room_by_name( cls, user, room_name):
-		room= cls.rooms["default"]
-		if room==None:
+		try:
+			room_url= cls.global_config['rooms'][room_name]
+		except:
+			try:
+				room_name="default"
+				print("conf",repr(cls.global_config))
+				room_url= cls.global_config['rooms'][room_name]
+			except:
+				room_url= "unknown"
+		if not room_name in cls.rooms:
 			room=Room()
-			cls.rooms["default"]=room
+			cls.rooms[room_name]=room
+		else:
+			room= cls.rooms[room_name]
 		print("room add user",repr(user))
-		room._user_enters_room(user)
+		room._user_enters_room(user, room_name, room_url)
 		return room
 
 	@classmethod 
 	def init(cls, parent, global_config):
 		cls.parent = parent
-		cls.rooms={"default":None}
+		cls.rooms={}
 		print("init rooms")
 		cls.global_config = global_config
 		cls.parent.register("room_", cls, cls.handleWSMsg,
@@ -39,7 +49,7 @@ class Room:
 		this_user.room.remove(this_user,True)
 		print('User ' + this_user.peer_id + ' websocket closed, removed from room')
 
-	def _user_enters_room(self, this_user):
+	def _user_enters_room(self, this_user, room_name, room_url):
 		self.users.append(this_user)
 		peer_ids=[]
 		for user in self.users:
@@ -49,7 +59,7 @@ class Room:
 			if user != this_user:
 				user.ws.emit('room_newUserConnected', {'id':this_user.peer_id, '_clientNum':len(self.users), '_ids': peer_ids})
 		print('User {0} connected, there are {1} clients connected'.format( this_user.name, len(self.users)))
-		this_user.ws.emit('room_introduction', {'id':this_user.peer_id, '_clientNum':len(self.users), '_ids': peer_ids})
+		this_user.ws.emit('room_introduction', {'id':this_user.peer_id, '_clientNum':len(self.users), '_ids': peer_ids, "room_name":room_name, "room_url":room_url})
 
 	@classmethod 
 	def handleWSMsg(cls, data, this_user):
