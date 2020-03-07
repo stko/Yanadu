@@ -51,15 +51,15 @@ class Room:
 
 	def _user_enters_room(self, this_user, room_name, room_url):
 		self.users.append(this_user)
-		peer_ids=[]
+		users_data=[]
 		for user in self.users:
-			peer_ids.append(user.peer_id)
+			users_data.append({'peer_id':user.peer_id,'name':user.name})
 		# Update everyone that the number of users has changed
 		for user in self.users:
 			if user != this_user:
-				user.ws.emit('room_newUserConnected', {'id':this_user.peer_id, '_clientNum':len(self.users), '_ids': peer_ids})
+				user.ws.emit('room_newUserConnected', {'id':this_user.peer_id, '_clientNum':len(self.users), '_ids': users_data})
 		print('User {0} connected, there are {1} clients connected'.format( this_user.name, len(self.users)))
-		this_user.ws.emit('room_introduction', {'id':this_user.peer_id, '_clientNum':len(self.users), '_ids': peer_ids, "room_name":room_name, "room_url":room_url})
+		this_user.ws.emit('room_introduction', {'id':this_user.peer_id, '_clientNum':len(self.users), '_ids': users_data, "room_name":room_name, "room_url":room_url,"name":this_user.name})
 
 	@classmethod 
 	def handleWSMsg(cls, data, this_user):

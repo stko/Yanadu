@@ -78,17 +78,22 @@ class Room  {
 		}
 	
 	
-	//On connection server sends the client his ID
+	//On connection server sends the client the user data
 	do_introduction(self,config){
 		console.log("do_introduction",config)
 		for(let i = 0; i < config._ids.length; i++){
-			if(config._ids[i] != config.id || true){
-				self.clients[config._ids[i]] = {
-					avatar: new Avatar(self.glScene,config.id)
+			if(config._ids[i].peer_id != config.id || true){
+				self.clients[config._ids[i].peer_id] = {
+					avatar: new Avatar(self.glScene,config._ids[i])
 				}
 			}
 		}
 		self.id = config.id
+		this.glScene.loadRoom(config.room_url)
+	}
+
+	load_room(room_url){
+		console.log("try to load ")
 	}
 	
 	do_newUserConnected(self, config){
@@ -102,7 +107,10 @@ class Room  {
 		}
 		if(config.id != self.id && !alreadyHasUser){
 			console.log('A new user connected with the id: ' + config.id)
-			self.clients[config.id] = new Avatar(self.glScene,config.id)
+			self.clients[config.id] = 
+			{
+				avatar: new Avatar(self.glScene,config.id)
+			}
 		}
 	}
 	
@@ -124,6 +132,7 @@ class Room  {
 			if(Object.keys(coords)[i] != self.id || true){
 				//Store the values
 				console.log("coords:",coords)
+				console.log("self.clients:",self.clients)
 				self.clients[Object.keys(coords)[i]].avatar.setPosition(coords[Object.keys(coords)[i]])
 
 			}

@@ -102,6 +102,10 @@ class Scene extends EventEmitter {
     this.emit('mouseMoved');
   }
 
+  loadRoom(room_url){
+    console.log("try to load room url ",room_url)
+  }
+
   detectMove(lastPosX,lastPosY,lastAngle){
     if (this.camera){
       let vector = this.camera.getWorldDirection();
