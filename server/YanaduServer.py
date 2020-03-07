@@ -22,6 +22,8 @@ from base64 import b64encode
 import math
 from room import Room
 from uuid import uuid4
+import argparse
+import yaml
 
 from pprint import pprint
 
@@ -35,19 +37,33 @@ else:
 	from BaseHTTPServer import HTTPServer
 	from StringIO import StringIO
 
+try:
+	with open(r'config.yaml') as file:
+		# The FullLoader parameter handles the conversion from YAML
+		# scalar values to Python the dictionary format
+		config = yaml.load(file, Loader=yaml.Loader)
+except:
+	config={
+		'host': 'localhost',
+		'port': 8000,
+		'secure': True,
+		'credentials': ''
+	}
 
-if len(sys.argv) > 1:
-	port = int(sys.argv[1])
-else:
-	port = 8000
-if len(sys.argv) > 2:
-	secure = str(sys.argv[2]).lower() == "secure"
-else:
-	secure = False
-if len(sys.argv) > 3:
-	credentials = str(sys.argv[3])
-else:
-	credentials = ""
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--host", default=config["host"],
+                    help="the IP interface to bound the server to")
+parser.add_argument("-p", "--port", default=config["port"],
+                    help="the server port")
+parser.add_argument("-s", "--secure", action="store_true", default=config["secure"],
+                    help="use secure https: and wss:")
+parser.add_argument("-c", "--credentials",  default=config["credentials"],
+                    help="user credentials")
+args = parser.parse_args()
+print(repr(args))
+
 
 
 class User:
@@ -169,17 +185,17 @@ class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
 
 def _ws_main():
 	try:
-		server = ThreadedHTTPServer(('192.168.1.27', port), WSXanaduHandler)
+		server = ThreadedHTTPServer((args.host, args.port), WSXanaduHandler)
 		server.daemon_threads = True
-		server.auth = b64encode(credentials.encode("ascii"))
-		if secure:
+		server.auth = b64encode(args.credentials.encode("ascii"))
+		if args.secure:
 			# double with line above?!?
-			#server.auth = b64encode(credentials.encode("ascii"))
+			#server.auth = b64encode(args.credentials.encode("ascii"))
 			server.socket = ssl.wrap_socket(
 				server.socket, certfile='./server.pem', keyfile='./key.pem', server_side=True)
-			print('started secure https server at port %d' % (port,))
+			print('started secure https server at port %d' % (args.port))
 		else:
-			print('started http server at port %d' % (port,))
+			print('started http server at port %d' % (args.port))
 		WebRTC(server, ws_clients, global_config)
 		Room.init(server, global_config)
 		origin_dir = os.path.dirname(__file__)

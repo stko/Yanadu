@@ -14,6 +14,7 @@ webRTC.init(webService) //announces the webRTC to the webservice
 room.init(webService) //announces the webRTC to the webservice
 //webService.init() // let's rock
 window.showLogin = function (){
+	// taken from https://www.w3schools.com/howto/howto_css_login_form.asp
 	document.getElementById('login').style.display='block'
 }
 
