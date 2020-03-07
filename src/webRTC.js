@@ -30,7 +30,7 @@ class WebRTC  {
 			this.setup_local_media(this, () => {
 				/* once the user has given us access to their
 					* microphone/camcorder, rtc_join the room and start peering up */
-				this.join_chat_room(this, this.DEFAULT_ROOM, { 'whatever-you-want-here': 'stuff' });
+				//this.join_chat_room(this, this.DEFAULT_ROOM, { 'whatever-you-want-here': 'stuff' });
 			});
 	
 		}
@@ -232,9 +232,11 @@ class WebRTC  {
 		delete self.peer_media_elements[config.peer_id]
 	}
 
-	join_chat_room (self,room, userdata) {
+	/*
+	join_chat_roomjoin_chat_room (self,room, userdata) {
 		self.emit('_join', { "room": room, "name": "Alice",  "userdata": userdata })
 	}
+	*/
 
 	remove_chat_room (room) {
 		self.emit('rtc_remove', room)

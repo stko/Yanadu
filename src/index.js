@@ -12,5 +12,14 @@ function userMoved(coords){
 }
 webRTC.init(webService) //announces the webRTC to the webservice
 room.init(webService) //announces the webRTC to the webservice
-webService.init() // let's rock
+//webService.init() // let's rock
+window.showLogin = function (){
+	document.getElementById('login').style.display='block'
+}
 
+window.handleLogin = function (username, pw, remember){
+	document.getElementById('login').style.display='none'
+	alert(username)
+	webService.init(username, pw, remember) // let's rock
+}
+showLogin()

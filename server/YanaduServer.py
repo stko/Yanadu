@@ -107,6 +107,7 @@ class WSXanaduHandler(HTTPWebSocketsHandler):
 			self.user.name = data['config']["name"]
 			#self.user.peer_id = data['config']["peer_id"]
 			self.user.room = Room.find_room_by_name( self.user, data['config']["room"])
+			'''
 			rtc = self.get_module("rtc_")
 			if rtc:
 				for other_user in self.user.room.users:
@@ -114,7 +115,7 @@ class WSXanaduHandler(HTTPWebSocketsHandler):
 							rtc["module"].join_users_into_group(
 								self.user, other_user)
 					break
-
+			'''
 		else:
 			unknown_msg = True
 			global modules

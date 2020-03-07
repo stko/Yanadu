@@ -17,7 +17,7 @@ class WebService {
 		this.emit = (type, config) => {
 			//attach the other peer username to our messages 
 			let message = { 'type': type, 'config': config }
-			if (this.signaling_socket.readyState==1){
+			if (this.signaling_socket && this.signaling_socket.readyState==1){
 			this.signaling_socket.send(JSON.stringify(message))
 			}
 		}
@@ -30,7 +30,10 @@ class WebService {
 		console.log("Register prefix", prefix,this.modules)
 	}
 
-	init () {
+	init (username, pw, remember) {
+		this.username=username
+		this.pw=pw
+		this.remember=remember
 		console.log("Connecting to signaling server")
 		this.signaling_socket = new WebSocket(this.SIGNALING_SERVER)
 		this.signaling_socket.onopen =  ()  => {
@@ -38,6 +41,7 @@ class WebService {
 			for (let prefix in this.modules){
 				this.modules[prefix].open()
 			}
+			this.emit('_join', { "room": "default", "name": this.username,  "userdata": {} })
 		}
 
 		this.signaling_socket.onclose =  (event)=>  {
@@ -45,6 +49,7 @@ class WebService {
 			for (let prefix in this.modules){
 				this.modules[prefix].close()
 			}
+			window.showLogin()
 		}
 
 		//when we got a message from a signaling server 
@@ -65,6 +70,7 @@ class WebService {
 
 		this.signaling_socket.onerror = function (err) {
 			console.log("Got error", err)
+			window.showLogin()
 		}
 
 	
