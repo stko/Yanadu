@@ -2,6 +2,7 @@
 
 import Scene from './scene';
 import * as THREE from 'three';
+import Avatar from './avatar';
 
 class Room  {
 	
@@ -17,33 +18,28 @@ class Room  {
 		this.clients = new Object()
 		self=this
 		this.glScene.on('userMoved', ()=>{
-			this.emit_room_move(this.glScene.camera)
+			this.emit_room_move(self)
 		});
 		this.glScene.on('mouseMoved', ()=>{
-			this.emit_room_move(this.glScene.camera)
+			this.emit_room_move(self)
 		});
 		}
 		
 		poll_movements(self){
-			if (self.glScene && self.glScene.camera && self.emit){
-				self.emit_room_move(self, self.glScene.camera);
+			if (self.glScene  && self.emit){
+				self.emit_room_move(self );
 			}
 			self.intervalID = window.setTimeout(function(){self.poll_movements(self);}, 100);
 		}
 
-		emit_room_move(self, camera){
-			if (camera){
-				let vector = camera.getWorldDirection();
-				let theta = Math.atan2(vector.x,vector.z);
-				let newPosX = Math.floor(camera.position.x * 4);
-				let newPosY = Math.floor(camera.position.y * 4);
-				let newAngle = Math.floor(theta * 8 / Math.PI); 
-				if (newPosX != self.lastPosX || newPosY != self.lastPosY || newAngle != self.lastAngle){
-					self.lastPosX = newPosX;
-					self.lastPosY = newPosY;
-					self.lastAngle = newAngle;
-					self.emit("room_move",{'pos':[camera.position.x, camera.position.y, camera.position.z],"angle":theta})
-				}
+		emit_room_move(self){
+			let pos=self.glScene.detectMove(self.lastPosX,self.lastPosY,self.lastAngle)
+			
+			if (pos!=null){
+				self.lastPosX = pos[0];
+				self.lastPosY = pos[1];
+				self.lastAngle = pos[3];
+				self.emit("room_move",{'pos':[pos[0], pos[1], pos[2]],"angle":pos[3]})
 			}
 		}
 		
@@ -88,13 +84,8 @@ class Room  {
 		for(let i = 0; i < config._ids.length; i++){
 			if(config._ids[i] != config.id || true){
 				self.clients[config._ids[i]] = {
-				mesh: new THREE.Mesh(
-					new THREE.BoxGeometry(1,1,1),
-					new THREE.MeshNormalMaterial()
-				)
-			}
-			//Add initial users to the scene
-			self.glScene.scene.add(self.clients[config._ids[i]].mesh)
+					avatar: new Avatar(self.glScene,config.id)
+				}
 			}
 		}
 		self.id = config.id
@@ -110,18 +101,9 @@ class Room  {
 			}
 		}
 		if(config.id != self.id && !alreadyHasUser){
-		console.log('A new user connected with the id: ' + config.id)
-		self.clients[config.id] = {
-			mesh: new THREE.Mesh(
-			new THREE.BoxGeometry(1,1,1),
-			new THREE.MeshNormalMaterial()
-			)
+			console.log('A new user connected with the id: ' + config.id)
+			self.clients[config.id] = new Avatar(self.glScene,config.id)
 		}
-
-		//Add initial users to the scene
-		self.glScene.scene.add(self.clients[config.id].mesh);
-		}
-	
 	}
 	
 	do_userDisconnected(self, config){
@@ -130,7 +112,7 @@ class Room  {
 
 		if(config.id != self.id){
 		console.log('A user disconnected with the id: ' + config.id)
-		self.glScene.scene.remove(self.clients[config.id].mesh)
+		self.clients[config.id].avatar.remove()
 		delete self.clients[config.id]
 		}
 	}
@@ -141,24 +123,9 @@ class Room  {
 		for(let i = 0; i < Object.keys(coords).length; i++){
 			if(Object.keys(coords)[i] != self.id || true){
 				//Store the values
-				let oldPos = self.clients[Object.keys(coords)[i]].mesh.position
 				console.log("coords:",coords)
-				let newPos = coords[Object.keys(coords)[i]].position
-				let newRotation = coords[Object.keys(coords)[i]].rotation
+				self.clients[Object.keys(coords)[i]].avatar.setPosition(coords[Object.keys(coords)[i]])
 
-				//Create a vector 3 and lerp the new values with the old values
-				let lerpedPos = new THREE.Vector3()
-				lerpedPos.x = THREE.Math.lerp(oldPos.x, newPos[0], 0.3)
-				lerpedPos.y = THREE.Math.lerp(oldPos.y, newPos[1], 0.3)
-				lerpedPos.z = THREE.Math.lerp(oldPos.z, newPos[2], 0.3)
-
-				//Set the position
-				self.clients[Object.keys(coords)[i]].mesh.position.set(lerpedPos.x, lerpedPos.y, lerpedPos.z)
-				//Set the rotation
-				//self.clients[Object.keys(coords)[i]].mesh.rotation.set(newRotation)
-				//self.clients[Object.keys(coords)[i]].mesh.rotation.y += 0.01
-				self.clients[Object.keys(coords)[i]].mesh.rotation.y = newRotation[1]
-	
 			}
 		}
 	}

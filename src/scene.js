@@ -101,6 +101,22 @@ class Scene extends EventEmitter {
   onMouseMove(e){
     this.emit('mouseMoved');
   }
+
+  detectMove(lastPosX,lastPosY,lastAngle){
+    if (this.camera){
+      let vector = this.camera.getWorldDirection();
+      let theta = Math.atan2(vector.x,vector.z);
+      let newPosX = Math.floor(this.camera.position.x * 4);
+      let newPosY = Math.floor(this.camera.position.y * 4);
+      let newAngle = Math.floor(theta * 8 / Math.PI); 
+      if (newPosX != lastPosX *4 || newPosY != lastPosY *4|| newAngle != lastAngle *8){
+        return [ newPosX / 4 , newPosY / 4, this.camera.position.z ,newAngle / 8 ]
+      }else{
+        return null
+      }
+    }
+  }
+
 }
 
 export default Scene;
