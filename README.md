@@ -49,7 +49,7 @@ Browserify is setup to transform both ES6 Javascript and ```glslify``` for GLSL 
 ## Credits
 Build system and basic 3D routines from [https://github.com/juniorxsound/THREE-Multiplayer/](https://github.com/juniorxsound/THREE-Multiplayer/)
 
-
+Room layout and first furnitures are taken from [https://github.com/furnishup/blueprint3d](https://github.com/furnishup/blueprint3d)
 
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com)
 

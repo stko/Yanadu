@@ -3,6 +3,7 @@
 import Scene from './scene';
 import * as THREE from 'three';
 import Avatar from './avatar';
+import Room_B3D from './room_b3d';
 
 class Room  {
 	
@@ -89,11 +90,12 @@ class Room  {
 			}
 		}
 		self.id = config.id
-		this.glScene.loadRoom(config.room_url)
+		this.loadRoom(config.room_url)
 	}
 
-	load_room(room_url){
-		console.log("try to load ")
+	loadRoom(room_url){
+		console.log("try to load ",room_url)
+		var room_b3d=new Room_B3D(room_url,this.glScene)
 	}
 	
 	do_newUserConnected(self, config){
