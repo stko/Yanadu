@@ -13,7 +13,7 @@ class Room  {
 		this.id = 0
 		this.emit=emit
 		this.lastPosX=0
-		this.lastPosY=0
+		this.lastPosZ=0
 		this.lastAngle=0
 		this.instances = []
 		this.clients = new Object()
@@ -34,13 +34,13 @@ class Room  {
 		}
 
 		emit_room_move(self){
-			let pos=self.glScene.detectMove(self.lastPosX,self.lastPosY,self.lastAngle)
+			let pos=self.glScene.detectMove(self.lastPosX,self.lastPosZ,self.lastAngle)
 			
 			if (pos!=null){
 				self.lastPosX = pos[0];
-				self.lastPosY = pos[1];
+				self.lastPosZ = pos[2];
 				self.lastAngle = pos[3];
-				self.emit("room_move",{'pos':[pos[0], pos[1], pos[2]],"angle":pos[3]})
+				self.emit("room_move",{'pos':[pos[0], 0.5, pos[2]],"angle":pos[3]})
 			}
 		}
 		

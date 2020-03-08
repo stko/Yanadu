@@ -14,7 +14,7 @@ class Avatar  {
 			new THREE.BoxGeometry(1,1,1),
 			new THREE.MeshNormalMaterial()
 			)
-
+		this.mesh.position.set(0, + 0.5 ,0);
 
 		this.title = this.makeTextSprite( this.name, 
 		{ fontsize: 24, borderColor: {r:255, g:0, b:0, a:1.0}, backgroundColor: {r:255, g:100, b:100, a:0.8} } );

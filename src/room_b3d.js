@@ -37,14 +37,14 @@ class Room_B3D {
 								//this_mesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial(materials[0]));
 								this_mesh = new THREE.Mesh(geometry, new THREE.MeshNormalMaterial());
 								this_mesh.position.set(
-									item.xpos / 1000,
-									item.ypos / 1000,
-									item.zpos / 1000
+									item.xpos / 100,
+									item.ypos / 100,
+									item.zpos / 100
 								)
 								this_mesh.scale.set(
-									item.scale_x / 1000,
-									item.scale_y / 1000,
-									item.scale_z / 1000
+									item.scale_x / 100,
+									item.scale_y / 100,
+									item.scale_z / 100
 								);
 								this_mesh.rotation.y = item.rotation
 								this_mesh.name = item.item_name

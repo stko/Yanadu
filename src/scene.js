@@ -53,6 +53,7 @@ class Scene extends EventEmitter {
 
     this.helperGrid = new THREE.GridHelper( 10, 10 );
     this.helperGrid.position.y = -0.5;
+    //this.camera.position.set(0,1.8,0);
     this.scene.add(this.helperGrid);
     this.clock = new THREE.Clock();
 
@@ -107,14 +108,15 @@ class Scene extends EventEmitter {
   }
 
   detectMove(lastPosX,lastPosY,lastAngle){
+    //Attention: The world has x/y on the floor, while Threejs has x/z on the floor!
     if (this.camera){
       let vector = this.camera.getWorldDirection();
       let theta = Math.atan2(vector.x,vector.z);
       let newPosX = Math.floor(this.camera.position.x * 4);
-      let newPosY = Math.floor(this.camera.position.y * 4);
+      let newPosZ = Math.floor(this.camera.position.z * 4);
       let newAngle = Math.floor(theta * 8 / Math.PI); 
-      if (newPosX != lastPosX *4 || newPosY != lastPosY *4|| newAngle != lastAngle *8){
-        return [ newPosX / 4 , newPosY / 4, this.camera.position.z ,newAngle / 8 ]
+      if (newPosX != lastPosX *4 || newPosZ != lastPosY *4|| newAngle != lastAngle *8){
+        return [ newPosX / 4 , this.camera.position.y , newPosZ / 4 ,newAngle / 8 ]
       }else{
         return null
       }
