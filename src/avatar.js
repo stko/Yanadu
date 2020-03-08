@@ -15,30 +15,95 @@ class Avatar  {
 			new THREE.MeshNormalMaterial()
 			)
 
-			var canvas1 = document.createElement('canvas');
-			var context1 = canvas1.getContext('2d');
-			context1.font = "Bold 40px Arial";
-			context1.fillStyle = "rgba(255,0,0,0.95)";
-			context1.fillText(this.name, 0, 50);
-		
-			var texture1 = new THREE.Texture(canvas1);
-			texture1.needsUpdate = true;
-		
-			var material1 = new THREE.MeshBasicMaterial( { map: texture1, side:THREE.DoubleSide } );
-			material1.transparent = true;
-		
-			this.title = new THREE.Mesh(
-				new THREE.PlaneGeometry(canvas1.width, canvas1.height),
-				material1
-			);
-		
-			this.title.position.set(this.mesh.position.x,this.mesh.position.y ,this.mesh.position.z+2);
+
+		this.title = this.makeTextSprite( this.name, 
+		{ fontsize: 24, borderColor: {r:255, g:0, b:0, a:1.0}, backgroundColor: {r:255, g:100, b:100, a:0.8} } );
+	
+		this.title.position.set(this.mesh.position.x,this.mesh.position.y + 0.3 ,this.mesh.position.z);
+
 
 		//Add initial users to the scene
 		this.glScene.scene.add(this.mesh);
 		this.glScene.scene.add(this.title);
 		}
+
+		makeTextSprite( message, parameters )
+		{
+			if ( parameters === undefined ) parameters = {};
+			
+			var fontface = parameters.hasOwnProperty("fontface") ? 
+				parameters["fontface"] : "Arial";
+			
+			var fontsize = parameters.hasOwnProperty("fontsize") ? 
+				parameters["fontsize"] : 18;
+			
+			var borderThickness = parameters.hasOwnProperty("borderThickness") ? 
+				parameters["borderThickness"] : 4;
+			
+			var borderColor = parameters.hasOwnProperty("borderColor") ?
+				parameters["borderColor"] : { r:0, g:0, b:0, a:1.0 };
+			
+			var backgroundColor = parameters.hasOwnProperty("backgroundColor") ?
+				parameters["backgroundColor"] : { r:255, g:255, b:255, a:1.0 };
 		
+			//var spriteAlignment = THREE.SpriteAlignment.topLeft;
+				
+			var canvas = document.createElement('canvas');
+			var context = canvas.getContext('2d');
+			context.font = "Bold " + fontsize + "px " + fontface;
+			
+			// get size data (height depends only on font size)
+			var metrics = context.measureText( message );
+			var textWidth = metrics.width;
+			
+			// background color
+			context.fillStyle   = "rgba(" + backgroundColor.r + "," + backgroundColor.g + ","
+										  + backgroundColor.b + "," + backgroundColor.a + ")";
+			// border color
+			context.strokeStyle = "rgba(" + borderColor.r + "," + borderColor.g + ","
+										  + borderColor.b + "," + borderColor.a + ")";
+		
+			context.lineWidth = borderThickness;
+			this.roundRect(context, borderThickness/2, borderThickness/2, textWidth + borderThickness, fontsize * 1.4 + borderThickness, 6);
+			// 1.4 is extra height factor for text below baseline: g,j,p,q.
+			
+			// text color
+			context.fillStyle = "rgba(0, 0, 0, 1.0)";
+		
+			context.fillText( message, borderThickness, fontsize + borderThickness);
+			
+			// canvas contents will be used for a texture
+			var texture = new THREE.Texture(canvas) 
+			texture.needsUpdate = true;
+		
+			var spriteMaterial = new THREE.SpriteMaterial( 
+				//{ map: texture, useScreenCoordinates: false, alignment: spriteAlignment } );
+				{ map: texture, useScreenCoordinates: false } );
+				var sprite = new THREE.Sprite( spriteMaterial );
+			//sprite.scale.set(100,50,1.0);
+			return sprite;	
+		}
+		
+		// function for drawing rounded rectangles
+		roundRect(ctx, x, y, w, h, r) 
+		{
+			ctx.beginPath();
+			ctx.moveTo(x+r, y);
+			ctx.lineTo(x+w-r, y);
+			ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+			ctx.lineTo(x+w, y+h-r);
+			ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+			ctx.lineTo(x+r, y+h);
+			ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+			ctx.lineTo(x, y+r);
+			ctx.quadraticCurveTo(x, y, x+r, y);
+			ctx.closePath();
+			ctx.fill();
+			ctx.stroke();   
+		}
+				
+
+
 		remove(){
 			this.glScene.scene.remove(this.mesh)
 			this.glScene.scene.remove(this.title)
@@ -58,7 +123,7 @@ class Avatar  {
 
 		//Set the position
 		this.mesh.position.set(lerpedPos.x, lerpedPos.y, lerpedPos.z)
-		this.title.position.set(lerpedPos.x, lerpedPos.y , lerpedPos.z +2)
+		this.title.position.set(lerpedPos.x, lerpedPos.y + 0.3 , lerpedPos.z )
 
 		//Set the rotation
 		//self.clients[Object.keys(coords)[i]].mesh.rotation.set(newRotation)
