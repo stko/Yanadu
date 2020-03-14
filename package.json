@@ -19,7 +19,8 @@
     "gsap": "^1.20.3",
     "http": "0.0.0",
     "static-eval": ">=2.0.0",
-    "three": "^0.89.0"
+    "three": "^0.92.0",
+    "three-gltf-loader": "^1.92.0"
   },
   "devDependencies": {
     "babel-core": "^6.26.3",

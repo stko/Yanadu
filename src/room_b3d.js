@@ -10,6 +10,7 @@ class Room_B3D {
 		// https://stackoverflow.com/q/15246598
 		var _this = this
 		this.loader = new THREE.JSONLoader();
+		//this.loader = new THREE.ObjectLoader();
 		fetch(room_url)
 			.then(res => res.json())
 			.then((roomLayoutJson) => {

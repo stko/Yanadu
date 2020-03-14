@@ -2,6 +2,11 @@
 
 //import Scene from './scene';
 import * as THREE from 'three';
+import GLTFLoader from 'three-gltf-loader';
+
+//import * as GLTFLoader from 'three/examples/jsm/loaders/GLTFLoader';
+
+
 
 class Avatar  {
 	
@@ -10,6 +15,12 @@ class Avatar  {
 		this.glScene = glScene
 		this.avatarID = userData.id
 		this.name = userData.name
+		this.api = { state: 'Walking' };
+		var self=this
+
+		// https://github.com/mrdoob/three.js/blob/master/examples/webgl_animation_skinning_morph.html
+
+		/*
 		this.mesh = new THREE.Mesh(
 			new THREE.BoxGeometry(1,1,1),
 			new THREE.MeshNormalMaterial()
@@ -24,10 +35,146 @@ class Avatar  {
 
 		//Add initial users to the scene
 		this.glScene.scene.add(this.mesh);
+		*/
+		// *
+		var loader = new GLTFLoader();
+		loader.load( '/avatars/RobotExpressive.glb', function ( gltf ) {
+
+			var model = gltf.scene;
+			self.glScene.scene.add( model );
+
+			createGUI( model, gltf.animations );
+
+		}, undefined, function ( e ) {
+
+			console.error( e );
+
+		} );
+
+
+		function createGUI( model, animations ) {
+
+			var states = [ 'Idle', 'Walking', 'Running', 'Dance', 'Death', 'Sitting', 'Standing' ];
+			var emotes = [ 'Jump', 'Yes', 'No', 'Wave', 'Punch', 'ThumbsUp' ];
+
+			this.gui = new GUI();
+
+			this.mixer = new THREE.AnimationMixer( model );
+
+			var actions = {};
+
+			for ( var i = 0; i < animations.length; i ++ ) {
+
+				var clip = animations[ i ];
+				var action = mixer.clipAction( clip );
+				actions[ clip.name ] = action;
+
+				if ( emotes.indexOf( clip.name ) >= 0 || states.indexOf( clip.name ) >= 4 ) {
+
+					action.clampWhenFinished = true;
+					action.loop = THREE.LoopOnce;
+
+				}
+
+			}
+
+			// states
+
+			var statesFolder = gui.addFolder( 'States' );
+
+			var clipCtrl = statesFolder.add( api, 'state' ).options( states );
+
+			clipCtrl.onChange( function () {
+
+				fadeToAction( this.api.state, 0.5 );
+
+			} );
+
+			statesFolder.open();
+
+			// emotes
+
+			var emoteFolder = gui.addFolder( 'Emotes' );
+
+			function createEmoteCallback( name ) {
+
+				this.api[ name ] = function () {
+
+					fadeToAction( name, 0.2 );
+
+					mixer.addEventListener( 'finished', restoreState );
+
+				};
+
+				emoteFolder.add( this.api, name );
+
+			}
+
+			function restoreState() {
+
+				mixer.removeEventListener( 'finished', restoreState );
+
+				fadeToAction( this.api.state, 0.2 );
+
+			}
+
+			for ( var i = 0; i < emotes.length; i ++ ) {
+
+				createEmoteCallback( emotes[ i ] );
+
+			}
+
+			emoteFolder.open();
+
+			// expressions
+
+			face = model.getObjectByName( 'Head_2' );
+
+			var expressions = Object.keys( face.morphTargetDictionary );
+			var expressionFolder = gui.addFolder( 'Expressions' );
+
+			for ( var i = 0; i < expressions.length; i ++ ) {
+
+				expressionFolder.add( face.morphTargetInfluences, i, 0, 1, 0.01 ).name( expressions[ i ] );
+
+			}
+
+			activeAction = actions[ 'Walking' ];
+			activeAction.play();
+
+			expressionFolder.open();
+
+		}
+
+
+// */
+
+
 		this.glScene.scene.add(this.title);
 		}
 
-		makeTextSprite( message, parameters )
+		
+	fadeToAction( name, duration ) {
+
+		previousAction = activeAction;
+		activeAction = actions[ name ];
+
+		if ( previousAction !== activeAction ) {
+
+			previousAction.fadeOut( duration );
+
+		}
+
+		activeAction
+			.reset()
+			.setEffectiveTimeScale( 1 )
+			.setEffectiveWeight( 1 )
+			.fadeIn( duration )
+			.play();
+
+	}
+
+	makeTextSprite( message, parameters )
 		{
 			if ( parameters === undefined ) parameters = {};
 			
@@ -104,10 +251,10 @@ class Avatar  {
 				
 
 
-		remove(){
-			this.glScene.scene.remove(this.mesh)
-			this.glScene.scene.remove(this.title)
-		}
+	remove(){
+		this.glScene.scene.remove(this.mesh)
+		this.glScene.scene.remove(this.title)
+	}
 		
 	setPosition(coords){
 		let oldPos = this.mesh.position
