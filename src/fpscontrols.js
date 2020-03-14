@@ -270,7 +270,7 @@ module.exports = (THREE) =>{
 			targetPosition.z = position.z + 100 * Math.sin( this.phi ) * Math.sin( this.theta );
 
 			this.object.lookAt( targetPosition );
-			if(this.lockYPos) this.object.position.y = 0;
+			//if(this.lockYPos) this.object.position.y = 0;
 
 		};
 
