@@ -110,7 +110,7 @@ class Scene extends EventEmitter {
   detectMove(lastPosX,lastPosY,lastAngle){
     //Attention: The world has x/y on the floor, while Threejs has x/z on the floor!
     if (this.camera){
-      let vector = this.camera.getWorldDirection(new Vector3());
+      let vector = this.camera.getWorldDirection(new THREE.Vector3());
       let theta = Math.atan2(vector.x,vector.z);
       let newPosX = Math.floor(this.camera.position.x * 4);
       let newPosZ = Math.floor(this.camera.position.z * 4);

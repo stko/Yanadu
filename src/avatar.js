@@ -26,24 +26,23 @@ class Avatar  {
 			new THREE.MeshNormalMaterial()
 			)
 		this.mesh.position.set(0, + 0.5 ,0);
-
-		this.title = this.makeTextSprite( this.name, 
-		{ fontsize: 24, borderColor: {r:255, g:0, b:0, a:1.0}, backgroundColor: {r:255, g:100, b:100, a:0.8} } );
-	
-		this.title.position.set(this.mesh.position.x,this.mesh.position.y + 0.3 ,this.mesh.position.z);
-
-
 		//Add initial users to the scene
 		this.glScene.scene.add(this.mesh);
 		*/
+		this.title = this.makeTextSprite( this.name, 
+		{ fontsize: 24, borderColor: {r:255, g:0, b:0, a:1.0}, backgroundColor: {r:255, g:100, b:100, a:0.8} } );
+	
+
+
+
 		// *
 		var loader = new GLTFLoader();
 		loader.load( '/avatars/RobotExpressive.glb', function ( gltf ) {
 
-			var model = gltf.scene;
-			self.glScene.scene.add( model );
+			self.model = gltf.scene;
+			self.glScene.scene.add( self.model );
 
-			createGUI( model, gltf.animations );
+			createGUI( self.model, gltf.animations );
 
 		}, undefined, function ( e ) {
 
@@ -57,16 +56,16 @@ class Avatar  {
 			var states = [ 'Idle', 'Walking', 'Running', 'Dance', 'Death', 'Sitting', 'Standing' ];
 			var emotes = [ 'Jump', 'Yes', 'No', 'Wave', 'Punch', 'ThumbsUp' ];
 
-			this.gui = new GUI();
+			//this.gui = new GUI();
 
-			this.mixer = new THREE.AnimationMixer( model );
+			self.mixer = new THREE.AnimationMixer( model );
 
 			var actions = {};
 
 			for ( var i = 0; i < animations.length; i ++ ) {
 
 				var clip = animations[ i ];
-				var action = mixer.clipAction( clip );
+				var action = self.mixer.clipAction( clip );
 				actions[ clip.name ] = action;
 
 				if ( emotes.indexOf( clip.name ) >= 0 || states.indexOf( clip.name ) >= 4 ) {
@@ -78,6 +77,7 @@ class Avatar  {
 
 			}
 
+			/* GUI
 			// states
 
 			var statesFolder = gui.addFolder( 'States' );
@@ -138,17 +138,18 @@ class Avatar  {
 				expressionFolder.add( face.morphTargetInfluences, i, 0, 1, 0.01 ).name( expressions[ i ] );
 
 			}
-
-			activeAction = actions[ 'Walking' ];
+*/
+			var activeAction = actions[ 'Walking' ];
 			activeAction.play();
 
-			expressionFolder.open();
+//			expressionFolder.open();
 
 		}
 
 
 // */
 
+		//this.title.position.set(self.model.position.x,self.model.position.y + 0.3 ,self.mesh.position.z);
 
 		this.glScene.scene.add(this.title);
 		}
@@ -252,12 +253,12 @@ class Avatar  {
 
 
 	remove(){
-		this.glScene.scene.remove(this.mesh)
+		this.glScene.scene.remove(this.model)
 		this.glScene.scene.remove(this.title)
 	}
 		
 	setPosition(coords){
-		let oldPos = this.mesh.position
+		let oldPos = this.model.position
 		console.log("coords:",coords)
 		let newPos = coords.position
 		let newRotation = coords.rotation
@@ -269,13 +270,13 @@ class Avatar  {
 		lerpedPos.z = THREE.Math.lerp(oldPos.z, newPos[2], 0.3)
 
 		//Set the position
-		this.mesh.position.set(lerpedPos.x, lerpedPos.y, lerpedPos.z)
+		this.model.position.set(lerpedPos.x, lerpedPos.y, lerpedPos.z)
 		this.title.position.set(lerpedPos.x, lerpedPos.y + 0.3 , lerpedPos.z )
 
 		//Set the rotation
 		//self.clients[Object.keys(coords)[i]].mesh.rotation.set(newRotation)
 		//self.clients[Object.keys(coords)[i]].mesh.rotation.y += 0.01
-		this.mesh.rotation.y = newRotation[1]
+		this.model.rotation.y = newRotation[1]
 
 
 	}
