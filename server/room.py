@@ -53,7 +53,7 @@ class Room:
 		self.users.append(this_user)
 		users_data=[]
 		for user in self.users:
-			users_data.append({'peer_id':user.peer_id,'name':user.name})
+			users_data.append({'peer_id':user.peer_id,'name':user.name, 'avatar':{'url':'/avatars/default.json'}})
 		# Update everyone that the number of users has changed
 		for user in self.users:
 			if user != this_user:

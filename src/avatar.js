@@ -4,142 +4,128 @@
 import * as THREE from 'three';
 import GLTFLoader from 'three-gltf-loader';
 
-//import * as GLTFLoader from 'three/examples/jsm/loaders/GLTFLoader';
-
-
 
 class Avatar  {
-	
-
-	constructor(glScene,userData){
+	constructor(glScene,userData,myself){
+		// if its my own avatar, we use only a simple box so that my own avatar does not disturb the view
 		this.glScene = glScene
 		this.avatarID = userData.id
 		this.name = userData.name
+		this.config= null
+
 		this.api = { state: 'Walking' };
 		var self=this
-
-		// https://github.com/mrdoob/three.js/blob/master/examples/webgl_animation_skinning_morph.html
-
-		/*
-		this.mesh = new THREE.Mesh(
-			new THREE.BoxGeometry(1,1,1),
-			new THREE.MeshNormalMaterial()
-			)
-		this.mesh.position.set(0, + 0.5 ,0);
-		//Add initial users to the scene
-		this.glScene.scene.add(this.mesh);
-		*/
 		this.title = this.makeTextSprite( this.name, 
 		{ fontsize: 24, borderColor: {r:255, g:0, b:0, a:1.0}, backgroundColor: {r:255, g:100, b:100, a:0.8} } );
-	
+		if (myself){
+			this.model = new THREE.Mesh(
+				new THREE.BoxGeometry(0.2,0.2,0.2),
+				new THREE.MeshNormalMaterial()
+				)
+			this.model.position.set(0, + 0.5 ,0);
+			//Add initial users to the scene
+			this.glScene.scene.add(this.model);
+		}else{
 
+			fetch(userData.avatar.url)
+				.then(res => res.json())
+				.then((avatarJson) => {
+					console.log('Avatar JSON! ', avatarJson);
+					self.config= avatarJson
+					// *
+					var loader = new GLTFLoader();
+					loader.load( avatarJson.model, function ( gltf ) {
+					//loader.load( '/avatars/Manga.glb', function ( gltf ) {
+							self.model = gltf.scene;
+						// workaround to give the model some color
+						self.model.traverse( function ( child ) {
+							if ( child instanceof THREE.Mesh ) {
+								child.material = new THREE.MeshNormalMaterial();
+							}
+						} );
+						// end of color workaround
+						if (avatarJson.scale){
+							self.model.scale.set(
+								avatarJson.scale.x,
+								avatarJson.scale.y,
+								avatarJson.scale.z
+							);
+						}
+						if (avatarJson.rotate){
+							self.model.rotation.set(
+								avatarJson.rotate.x,
+								avatarJson.rotate.y,
+								avatarJson.rotate.z
+							);
+						}
 
-
-		// *
-		var loader = new GLTFLoader();
-		loader.load( '/avatars/RobotExpressive.glb', function ( gltf ) {
-
-			self.model = gltf.scene;
-			self.glScene.scene.add( self.model );
-
-			createGUI( self.model, gltf.animations );
-
-		}, undefined, function ( e ) {
-
-			console.error( e );
-
-		} );
+						self.glScene.scene.add( self.model );
+						createGUI( self.model, gltf.animations );
+					}, undefined, function ( e ) {
+						console.error( e );
+					} );
+				})
+				.catch(err => { throw err });
+		}
 
 
 		function createGUI( model, animations ) {
-
 			var states = [ 'Idle', 'Walking', 'Running', 'Dance', 'Death', 'Sitting', 'Standing' ];
 			var emotes = [ 'Jump', 'Yes', 'No', 'Wave', 'Punch', 'ThumbsUp' ];
-
 			//this.gui = new GUI();
-
 			self.mixer = new THREE.AnimationMixer( model );
-
 			var actions = {};
-
 			for ( var i = 0; i < animations.length; i ++ ) {
-
+				console.log("Found some animations")
 				var clip = animations[ i ];
 				var action = self.mixer.clipAction( clip );
 				actions[ clip.name ] = action;
-
 				if ( emotes.indexOf( clip.name ) >= 0 || states.indexOf( clip.name ) >= 4 ) {
-
 					action.clampWhenFinished = true;
 					action.loop = THREE.LoopOnce;
-
 				}
-
 			}
 
 			/* GUI
+
 			// states
-
 			var statesFolder = gui.addFolder( 'States' );
-
 			var clipCtrl = statesFolder.add( api, 'state' ).options( states );
-
 			clipCtrl.onChange( function () {
-
 				fadeToAction( this.api.state, 0.5 );
-
 			} );
-
 			statesFolder.open();
 
 			// emotes
-
 			var emoteFolder = gui.addFolder( 'Emotes' );
-
 			function createEmoteCallback( name ) {
-
 				this.api[ name ] = function () {
-
 					fadeToAction( name, 0.2 );
-
 					mixer.addEventListener( 'finished', restoreState );
-
 				};
-
 				emoteFolder.add( this.api, name );
-
 			}
 
 			function restoreState() {
-
 				mixer.removeEventListener( 'finished', restoreState );
-
 				fadeToAction( this.api.state, 0.2 );
-
 			}
-
 			for ( var i = 0; i < emotes.length; i ++ ) {
-
 				createEmoteCallback( emotes[ i ] );
-
 			}
 
 			emoteFolder.open();
 
 			// expressions
-
 			face = model.getObjectByName( 'Head_2' );
-
 			var expressions = Object.keys( face.morphTargetDictionary );
 			var expressionFolder = gui.addFolder( 'Expressions' );
-
 			for ( var i = 0; i < expressions.length; i ++ ) {
-
 				expressionFolder.add( face.morphTargetInfluences, i, 0, 1, 0.01 ).name( expressions[ i ] );
-
 			}
 */
 			var activeAction = actions[ 'Walking' ];
+			console.log("Animate?!?")
 			activeAction.play();
 
 //			expressionFolder.open();
@@ -276,8 +262,11 @@ class Avatar  {
 		//Set the rotation
 		//self.clients[Object.keys(coords)[i]].mesh.rotation.set(newRotation)
 		//self.clients[Object.keys(coords)[i]].mesh.rotation.y += 0.01
-		this.model.rotation.y = newRotation[1]
-
+		if (this.config){
+		this.model.rotation.y = newRotation[1]+this.config.rotate.y
+		}else{
+			this.model.rotation.y = newRotation[1]
+		}
 
 	}
 }

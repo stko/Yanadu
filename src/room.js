@@ -85,7 +85,7 @@ class Room  {
 		for(let i = 0; i < config._ids.length; i++){
 			if(config._ids[i].peer_id != config.id || true){
 				self.clients[config._ids[i].peer_id] = {
-					avatar: new Avatar(self.glScene,config._ids[i])
+					avatar: new Avatar(self.glScene,config._ids[i],config._ids[i].peer_id == config.id)
 				}
 			}
 		}
@@ -108,10 +108,15 @@ class Room  {
 			}
 		}
 		if(config.id != self.id && !alreadyHasUser){
-			console.log('A new user connected with the id: ' + config.id)
-			self.clients[config.id] = 
-			{
-				avatar: new Avatar(self.glScene,config.id)
+			console.log('A new user connected with the config data: ' , config)
+			for(let i = 0; i < config._ids.length; i++){
+				if(config._ids[i].peer_id == config.id){
+					console.log("create Avatar")
+					self.clients[config.id] =
+					{
+						avatar: new Avatar(self.glScene,config._ids[i],false)
+					}
+				}
 			}
 		}
 	}
