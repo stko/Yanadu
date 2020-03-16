@@ -109,11 +109,11 @@ class WSXanaduHandler(HTTPWebSocketsHandler):
 	def on_ws_message(self, message):
 		if message is None:
 			message = ''
-		#self.log_message('websocket received "%s"', str(message))
+		self.log_message('websocket received "%s"', str(message))
 		try:
-			data = json.loads(message)
+			data = json.loads(str(message.decode('ascii')))
 		except:
-			self.log_message('%s', 'Invalid JSON')
+			self.log_message('Invalid JSON: %s', message)
 			return
 		#self.log_message('json msg: %s', message)
 
