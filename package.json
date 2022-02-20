@@ -19,7 +19,7 @@
     "gsap": "^3.6.0",
     "http": "0.0.0",
     "static-eval": ">=2.0.0",
-    "three": "^0.92.0",
+    "three": "^0.137.0",
     "three-gltf-loader": "^1.92.0"
   },
   "devDependencies": {
